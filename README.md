@@ -2,8 +2,12 @@
 
 [![CI](https://github.com/dcotecnologia/kubescope-ai-gabi/actions/workflows/ci.yml/badge.svg)](https://github.com/dcotecnologia/kubescope-ai-gabi/actions/workflows/ci.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdcotecnologia%2Fkubescope-ai-gabi%2Fbadges%2Fcoverage.json)](https://github.com/dcotecnologia/kubescope-ai-gabi/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/dcotecnologia/kubescope-ai-gabi)](https://github.com/dcotecnologia/kubescope-ai-gabi/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Python 3.15](https://img.shields.io/badge/python-3.15-blue.svg)
+[![Python 3.15](https://img.shields.io/badge/python-3.15-3776AB.svg?logo=python&logoColor=white)](pyproject.toml)
+[![Qt for Python](https://img.shields.io/badge/Qt-PySide6-41CD52.svg?logo=qt&logoColor=white)](https://doc.qt.io/qtforpython-6/)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-D7FF64.svg?logo=ruff&logoColor=black)](https://docs.astral.sh/ruff/)
+[![KubeScope extension](https://img.shields.io/badge/KubeScope-extension-326CE5.svg?logo=kubernetes&logoColor=white)](https://github.com/dcotecnologia/kubescope)
 
 **Gabi** is the assistant of [KubeScope](https://github.com/dcotecnologia/kubescope). Ask about your
 cluster in plain language, in the chat in the corner of the window or in your terminal, and she reads the
