@@ -14,8 +14,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from kubescope import cluster
-from kubescope.cluster import ClusterError
-from kubescope.models import (
+from kubescope.sdk.errors import ClusterError
+from kubescope.sdk.models import (
     RESOURCE_VIEWS,
     WORKLOAD_VIEWS,
     ClusterResource,
@@ -24,7 +24,7 @@ from kubescope.models import (
     format_cpu,
     format_memory,
 )
-from kubescope.utils.diagnostics import redact
+from kubescope.sdk.redact import redact
 
 from kubescope_gabi.actions import Request, parse_time
 

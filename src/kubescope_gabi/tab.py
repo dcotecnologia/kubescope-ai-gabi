@@ -3,8 +3,8 @@ from collections.abc import Callable, Sequence
 from math import ceil
 from pathlib import Path
 
+from kubescope.sdk.timezone import zone_now
 from kubescope.theme import themed
-from kubescope.utils.timezone import zone_now
 from kubescope.views.chat_icons import attach_icon, send_icon, stop_icon
 from PySide6.QtCore import (
     QBuffer,

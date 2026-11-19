@@ -253,6 +253,7 @@ version = "1.12.0"
 source = { editable = "../kubescope" }
 dependencies = [
     { name = "kubernetes" },
+    { name = "kubescope-sdk" },
     { name = "pyside6" },
     { name = "tzdata" },
 ]
@@ -260,6 +261,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "kubernetes", specifier = ">=37.0.2" },
+    { name = "kubescope-sdk", git = "https://github.com/dcotecnologia/kubescope-sdk?branch=main" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.7.0" },
     { name = "pyinstaller", marker = "extra == 'build'", specifier = ">=6.22.3" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.414" },
@@ -280,6 +282,7 @@ version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "kubescope" },
+    { name = "kubescope-sdk" },
 ]
 
 [package.dev-dependencies]
@@ -290,7 +293,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "kubescope", editable = "../kubescope" }]
+requires-dist = [
+    { name = "kubescope", editable = "../kubescope" },
+    { name = "kubescope-sdk", git = "https://github.com/dcotecnologia/kubescope-sdk?branch=main" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -298,6 +304,11 @@ dev = [
     { name = "pytest", specifier = ">=9.2.0" },
     { name = "ruff", specifier = ">=0.17.5" },
 ]
+
+[[package]]
+name = "kubescope-sdk"
+version = "0.1.0"
+source = { git = "https://github.com/dcotecnologia/kubescope-sdk?branch=main#0b3f089598235874d6cc581526e67d27b35d361c" }
 
 [[package]]
 name = "multidict"

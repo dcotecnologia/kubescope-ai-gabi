@@ -13,8 +13,9 @@ from dataclasses import dataclass
 from kubescope.cluster import describe_kube
 from kubescope.extensions.registries import CommandRegistry
 from kubescope.i18n import language_name, resolve_language
-from kubescope.settings import Settings, config_directory
-from kubescope.utils.errors import first_line
+from kubescope.sdk.errors import first_line
+from kubescope.sdk.paths import config_directory
+from kubescope.settings import Settings
 from PySide6.QtCore import QObject, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QMessageBox, QWidget

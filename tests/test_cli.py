@@ -4,7 +4,7 @@ from typing import cast
 
 import pytest
 from kubescope import cluster, writes
-from kubescope.cluster import ClusterError
+from kubescope.sdk.errors import ClusterError
 from kubescope.settings import Settings
 
 from kubescope_gabi import cli as cli_chat

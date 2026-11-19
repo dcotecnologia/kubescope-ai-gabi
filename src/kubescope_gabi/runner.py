@@ -18,9 +18,9 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from kubescope.utils.errors import first_line
-from kubescope.utils.flatpak import host_has, in_flatpak, on_host
-from kubescope.utils.programs import find_program
+from kubescope.sdk.errors import first_line
+from kubescope.sdk.flatpak import host_has, in_flatpak, on_host
+from kubescope.sdk.programs import find_program
 
 from kubescope_gabi.attachments import Attachment
 

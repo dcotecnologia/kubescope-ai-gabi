@@ -15,9 +15,10 @@ from collections.abc import Callable, Sequence
 
 from kubescope import cluster, integrations
 from kubescope.cli_cluster import _confirm, _context
-from kubescope.cluster import ClusterError
-from kubescope.settings import Settings, config_directory
-from kubescope.utils import ansi
+from kubescope.sdk import ansi
+from kubescope.sdk.errors import ClusterError
+from kubescope.sdk.paths import config_directory
+from kubescope.settings import Settings
 
 from kubescope_gabi import ASSISTANTS, actions, executor, runner
 from kubescope_gabi import installed as installed_assistants
