@@ -16,15 +16,20 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Literal
 
-from kubescope.sdk.models import EKS_VIEWS, MAX_REPLICAS, RESOURCE_VIEWS, WORKLOAD_VIEWS
-from kubescope.writes import _RESOURCE_OF_KIND
+from kubescope.sdk.models import (
+    EKS_VIEWS,
+    MAX_REPLICAS,
+    RESOURCE_KINDS,
+    RESOURCE_VIEWS,
+    WORKLOAD_VIEWS,
+)
 
 FENCE = "kubescope-action"
 _BLOCK = re.compile(rf"```{FENCE}[ \t]*\n(.*?)```[ \t]*\n?", re.DOTALL)
 
 Kind = Literal["navigate", "fetch", "write"]
 VIEWS = tuple(sorted({"pods", *WORKLOAD_VIEWS, *RESOURCE_VIEWS, *EKS_VIEWS}))
-KINDS = tuple(sorted(_RESOURCE_OF_KIND))
+KINDS = RESOURCE_KINDS
 
 
 @dataclass(frozen=True, slots=True)

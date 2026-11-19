@@ -8,9 +8,8 @@ Qt.
 from collections.abc import Callable
 from typing import Any
 
-from kubescope import writes
-
-from kubescope_gabi.actions import Request
+from kubescope.gabi import services
+from kubescope.gabi.actions import Request
 
 
 def write_call(
@@ -20,27 +19,35 @@ def write_call(
     args = request.args
     name = request.action.name
     if name == "scale":
-        return writes.scale_deployment, (
+        return services.writes().scale_deployment, (
             context,
             args["namespace"],
             args["name"],
             args["replicas"],
         )
     if name == "restart":
-        return writes.restart_deployment, (context, args["namespace"], args["name"])
+        return services.writes().restart_deployment, (
+            context,
+            args["namespace"],
+            args["name"],
+        )
     if name == "evict_pod":
-        return writes.evict_pod, (context, args["namespace"], args["name"])
+        return services.writes().evict_pod, (context, args["namespace"], args["name"])
     if name == "delete":
         if args["kind"] == "Pod":
-            return writes.delete_pod, (context, args["namespace"], args["name"])
-        return writes.delete_resource, (
+            return services.writes().delete_pod, (
+                context,
+                args["namespace"],
+                args["name"],
+            )
+        return services.writes().delete_resource, (
             context,
             args["kind"],
             args["namespace"],
             args["name"],
         )
     if name == "replace":
-        return writes.replace_resource, (
+        return services.writes().replace_resource, (
             context,
             args["kind"],
             args["namespace"],

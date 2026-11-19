@@ -1,8 +1,8 @@
 import pytest
 
-from kubescope_gabi import session as chat
-from kubescope_gabi.runner import Assistant, AssistantError
-from kubescope_gabi.session import ChatSession, Message
+from kubescope.gabi import session as chat
+from kubescope.gabi.runner import Assistant, AssistantError
+from kubescope.gabi.session import ChatSession, Message
 
 FAKE = Assistant(
     "fake", "Fake", "fake-ai", lambda model, system: [], lambda line: ("", "")
@@ -119,7 +119,7 @@ def test_what_the_person_sees_goes_with_the_newest_question_only(answers) -> Non
 def test_text_files_go_after_the_newest_question_and_images_to_the_program(
     monkeypatch,
 ) -> None:
-    from kubescope_gabi.attachments import Attachment
+    from kubescope.gabi.attachments import Attachment
 
     seen: list = []
 

@@ -308,7 +308,7 @@ dev = [
 [[package]]
 name = "kubescope-sdk"
 version = "0.1.0"
-source = { git = "https://github.com/dcotecnologia/kubescope-sdk?branch=main#0b3f089598235874d6cc581526e67d27b35d361c" }
+source = { git = "https://github.com/dcotecnologia/kubescope-sdk?branch=main#9058cc442f2137f4401230410eef788034c15c82" }
 
 [[package]]
 name = "multidict"

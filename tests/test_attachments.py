@@ -1,7 +1,7 @@
 import pytest
 
-from kubescope_gabi import attachments
-from kubescope_gabi.attachments import Attachment, AttachmentError
+from kubescope.gabi import attachments
+from kubescope.gabi.attachments import Attachment, AttachmentError
 
 PNG = b"\x89PNG\r\n\x1a\nrest"
 

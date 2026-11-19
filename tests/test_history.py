@@ -1,7 +1,7 @@
 import json
 
-from kubescope_gabi import history as store
-from kubescope_gabi.history import History
+from kubescope.gabi import history as store
+from kubescope.gabi.history import History
 
 
 def test_a_conversation_is_kept_for_each_context_between_runs(tmp_path) -> None:

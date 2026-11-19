@@ -3,16 +3,16 @@ import sys
 from typing import cast
 
 import pytest
-from kubescope import cluster, writes
 from kubescope.sdk.errors import ClusterError
 from kubescope.settings import Settings
 
-from kubescope_gabi import cli as cli_chat
-from kubescope_gabi import runner
-from kubescope_gabi.actions import FENCE
-from kubescope_gabi.history import History
-from kubescope_gabi.runner import Assistant, AssistantError
-from kubescope_gabi.session import ChatSession
+from kubescope import cluster, writes
+from kubescope.gabi import cli as cli_chat
+from kubescope.gabi import runner
+from kubescope.gabi.actions import FENCE
+from kubescope.gabi.history import History
+from kubescope.gabi.runner import Assistant, AssistantError
+from kubescope.gabi.session import ChatSession
 
 
 class FakeSettings:

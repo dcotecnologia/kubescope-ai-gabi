@@ -1,15 +1,5 @@
 from typing import Any, cast
 
-from kubescope.theme import themed
-from kubescope.views.chat_icons import (
-    close_icon,
-    dock_icon,
-    gear_icon,
-    icon_only,
-    popout_icon,
-    sparkle_icon,
-    trash_icon,
-)
 from PySide6.QtCore import (
     QByteArray,
     QEasingCurve,
@@ -35,7 +25,17 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from kubescope_gabi.runner import NAME
+from kubescope.gabi.icons import (
+    close_icon,
+    dock_icon,
+    gear_icon,
+    icon_only,
+    popout_icon,
+    sparkle_icon,
+    trash_icon,
+)
+from kubescope.gabi.runner import NAME
+from kubescope.gabi.services import themed
 
 BUBBLE = 42  # the round button in the corner
 ICON = 28  # the drawing on it

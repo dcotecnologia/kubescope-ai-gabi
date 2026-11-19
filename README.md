@@ -9,7 +9,7 @@ Gabi is an **extension**. KubeScope ships with her installed, and you can uninst
 her in **Settings → Extensions**, where you can also install her from this repository.
 
 > Work in progress: this project was extracted from the app. It is waiting for the app to load
-> extensions with `activate(ctx)`, so `kubescope_gabi.activate` does not exist yet.
+> extensions with `activate(ctx)`, so `kubescope.gabi.activate` does not exist yet.
 
 ## Install
 
@@ -49,7 +49,7 @@ file changes.
 | Path | What it is |
 | ---- | ---------- |
 | `kubescope-extension.toml` | The manifest the app reads before installing: id, version, API, entry point and permissions |
-| `src/kubescope_gabi/` | The code |
+| `src/kubescope.gabi/` | The code |
 | `languages/` | The translations of her texts, one file per language |
 | `tests/` | The tests |
 

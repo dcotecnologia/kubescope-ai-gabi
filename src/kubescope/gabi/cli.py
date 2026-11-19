@@ -13,26 +13,26 @@ import importlib
 import sys
 from collections.abc import Callable, Sequence
 
-from kubescope import cluster, integrations
 from kubescope.cli_cluster import _confirm, _context
 from kubescope.sdk import ansi
 from kubescope.sdk.errors import ClusterError
 from kubescope.sdk.paths import config_directory
 from kubescope.settings import Settings
 
-from kubescope_gabi import ASSISTANTS, actions, executor, runner
-from kubescope_gabi import installed as installed_assistants
-from kubescope_gabi.actions import Invalid, Request
-from kubescope_gabi.dispatch import write_call
-from kubescope_gabi.history import Entry, History
-from kubescope_gabi.knowledge import system_prompt
-from kubescope_gabi.runner import (
+from kubescope import cluster, integrations
+from kubescope.gabi import ASSISTANTS, actions, executor, runner
+from kubescope.gabi import installed as installed_assistants
+from kubescope.gabi.actions import Invalid, Request
+from kubescope.gabi.dispatch import write_call
+from kubescope.gabi.history import Entry, History
+from kubescope.gabi.knowledge import system_prompt
+from kubescope.gabi.runner import (
     COMPANY,
     NAME,
     Assistant,
     AssistantError,
 )
-from kubescope_gabi.session import ChatSession, Message
+from kubescope.gabi.session import ChatSession, Message
 
 MAX_FOLLOW_UPS = 5  # reads the assistant may ask for after one question
 EXIT_WORDS = ("/exit", "/quit", "exit", "quit")

@@ -6,8 +6,8 @@ import pytest
 from PySide6.QtCore import QEvent
 from PySide6.QtWidgets import QApplication, QLabel, QWidget
 
-from kubescope_gabi import panel as assistant_panel
-from kubescope_gabi.panel import AssistantDock
+from kubescope.gabi import panel as assistant_panel
+from kubescope.gabi.panel import AssistantDock
 
 application = QApplication.instance() or QApplication([])
 

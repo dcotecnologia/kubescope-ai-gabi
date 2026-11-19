@@ -2,8 +2,8 @@ import json
 
 import pytest
 
-from kubescope_gabi import actions
-from kubescope_gabi.actions import Invalid, Request
+from kubescope.gabi import actions
+from kubescope.gabi.actions import Invalid, Request
 
 
 def _block(document) -> str:

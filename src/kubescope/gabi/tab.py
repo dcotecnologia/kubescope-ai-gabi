@@ -4,8 +4,6 @@ from math import ceil
 from pathlib import Path
 
 from kubescope.sdk.timezone import zone_now
-from kubescope.theme import themed
-from kubescope.views.chat_icons import attach_icon, send_icon, stop_icon
 from PySide6.QtCore import (
     QBuffer,
     QByteArray,
@@ -46,17 +44,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from kubescope_gabi import actions, attachments, executor
-from kubescope_gabi.actions import Invalid, Request
-from kubescope_gabi.attachments import Attachment, AttachmentError
-from kubescope_gabi.history import Entry
-from kubescope_gabi.runner import (
+from kubescope.gabi import actions, attachments, executor
+from kubescope.gabi.actions import Invalid, Request
+from kubescope.gabi.attachments import Attachment, AttachmentError
+from kubescope.gabi.history import Entry
+from kubescope.gabi.icons import attach_icon, send_icon, stop_icon
+from kubescope.gabi.runner import (
     COMPANY,
     NAME,
     Assistant,
     AssistantError,
 )
-from kubescope_gabi.session import ChatSession, Message
+from kubescope.gabi.services import themed
+from kubescope.gabi.session import ChatSession, Message
 
 SHUTDOWN_WAIT_MS = 3000
 DEBUG_COMMAND = "/debug"  # tells what answers, from the settings

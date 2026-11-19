@@ -3,7 +3,8 @@ import json
 import pytest
 from kubescope.sdk.errors import ClusterError
 
-from kubescope_gabi import actions, executor
+from kubescope import cluster
+from kubescope.gabi import actions, executor
 
 
 def _request(action: str, **args) -> actions.Request:
@@ -24,7 +25,7 @@ def _window(seconds: int, since_time: str | None = None) -> dict:
     return {
         "since_time": since_time,
         "since_seconds": seconds,
-        "limit_bytes": executor.cluster.LOG_WINDOW_BYTES,
+        "limit_bytes": cluster.LOG_WINDOW_BYTES,
     }
 
 
@@ -43,12 +44,27 @@ def cluster_reads(monkeypatch):
             raise answers["details"]
         return answers["details"]
 
-    def logs(*args, **options):
-        calls.append(("logs", *args, options))
+    def logs(
+        context,
+        namespace,
+        pod,
+        container,
+        tail_lines=500,
+        since_time=None,
+        since_seconds=0,
+        limit_bytes=0,
+    ):
+        """The options that the assistant chooses; the rest is the default."""
+        options = {
+            "since_time": since_time,
+            "since_seconds": since_seconds,
+            "limit_bytes": limit_bytes,
+        }
+        calls.append(("logs", context, namespace, pod, container, options))
         return answers["logs"]
 
-    monkeypatch.setattr(executor.cluster, "get_resource_details", details)
-    monkeypatch.setattr(executor.cluster, "get_pod_logs", logs)
+    monkeypatch.setattr(cluster, "get_resource_details", details)
+    monkeypatch.setattr(cluster, "get_pod_logs", logs)
     return calls, answers
 
 
@@ -274,14 +290,14 @@ def lists(monkeypatch):
         calls.append(("resources", context, namespace, kind))
         return [], events if kind == "Event" else [service]
 
-    monkeypatch.setattr(executor.cluster, "get_pods", get_pods)
+    monkeypatch.setattr(cluster, "get_pods", get_pods)
     monkeypatch.setattr(
-        executor.cluster,
+        cluster,
         "get_usage",
         lambda _c, _n: {("ns", "Deployment", "web"): (3, None, None)},
     )
-    monkeypatch.setattr(executor.cluster, "get_workloads", get_workloads)
-    monkeypatch.setattr(executor.cluster, "get_resources", get_resources)
+    monkeypatch.setattr(cluster, "get_workloads", get_workloads)
+    monkeypatch.setattr(cluster, "get_resources", get_resources)
     return calls
 
 
@@ -315,7 +331,7 @@ def test_a_list_that_cannot_be_read_this_way_is_the_answer_too(lists) -> None:
 def test_a_long_list_is_cut_at_the_row_limit(lists, monkeypatch) -> None:
     monkeypatch.setattr(executor, "ROW_LIMIT", 1)
     monkeypatch.setattr(
-        executor.cluster,
+        cluster,
         "get_pods",
         lambda context, namespace: ([], [executor_pod(), executor_pod()]),
     )
@@ -373,8 +389,8 @@ def usage(monkeypatch):
         asked.append(("details", context, kind, namespace, name))
         return state["details"]
 
-    monkeypatch.setattr(executor.cluster, "get_pod_container_usage", live)
-    monkeypatch.setattr(executor.cluster, "get_resource_details", details)
+    monkeypatch.setattr(cluster, "get_pod_container_usage", live)
+    monkeypatch.setattr(cluster, "get_resource_details", details)
     return state, asked
 
 
@@ -432,7 +448,7 @@ def test_the_rows_of_the_lists_carry_the_live_usage_when_there_is_any(
     from kubescope.sdk.models import PodInfo
 
     monkeypatch.setattr(
-        executor.cluster,
+        cluster,
         "get_pods",
         lambda context, namespace: (
             [],
@@ -445,7 +461,7 @@ def test_the_rows_of_the_lists_carry_the_live_usage_when_there_is_any(
         ),
     )
     monkeypatch.setattr(
-        executor.cluster,
+        cluster,
         "get_usage",
         lambda context, namespace: {("ns", "Deployment", "web"): (4, 0.5, 2**29)},
     )

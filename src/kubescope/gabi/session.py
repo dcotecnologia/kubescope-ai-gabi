@@ -10,10 +10,10 @@ from collections.abc import Generator
 from dataclasses import dataclass
 from typing import Literal
 
-from kubescope_gabi import attachments as files
-from kubescope_gabi import runner
-from kubescope_gabi.attachments import Attachment
-from kubescope_gabi.runner import Assistant, AssistantError
+from kubescope.gabi import attachments as files
+from kubescope.gabi import runner
+from kubescope.gabi.attachments import Attachment
+from kubescope.gabi.runner import Assistant, AssistantError
 
 HISTORY_LIMIT = 40_000  # characters of the conversation that are sent
 

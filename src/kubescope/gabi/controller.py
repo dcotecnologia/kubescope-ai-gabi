@@ -10,7 +10,6 @@ comes through the `GabiPort`, never from the window itself.
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from kubescope.cluster import describe_kube
 from kubescope.extensions.registries import CommandRegistry
 from kubescope.i18n import language_name, resolve_language
 from kubescope.sdk.errors import first_line
@@ -20,19 +19,19 @@ from PySide6.QtCore import QObject, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QMessageBox, QWidget
 
-from kubescope_gabi import ASSISTANTS, runner
-from kubescope_gabi import actions as assistant_actions
-from kubescope_gabi import installed as installed_assistants
-from kubescope_gabi.dispatch import write_call
-from kubescope_gabi.history import History
-from kubescope_gabi.knowledge import system_prompt
-from kubescope_gabi.panel import BUBBLE, MARGIN, AssistantDock
-from kubescope_gabi.runner import NAME, Assistant
-from kubescope_gabi.runner import (
+from kubescope.gabi import ASSISTANTS, runner, services
+from kubescope.gabi import actions as assistant_actions
+from kubescope.gabi import installed as installed_assistants
+from kubescope.gabi.dispatch import write_call
+from kubescope.gabi.history import History
+from kubescope.gabi.knowledge import system_prompt
+from kubescope.gabi.panel import BUBBLE, MARGIN, AssistantDock
+from kubescope.gabi.runner import NAME, Assistant
+from kubescope.gabi.runner import (
     is_available as is_available_assistant,
 )
-from kubescope_gabi.session import ChatSession
-from kubescope_gabi.tab import AssistantTab
+from kubescope.gabi.session import ChatSession
+from kubescope.gabi.tab import AssistantTab
 
 
 @dataclass
@@ -313,7 +312,7 @@ class GabiController(QObject):
     def _kube_report(self, tab: AssistantTab) -> None:
         """What /kube says, read off the UI thread, and put in the chat."""
         self.port.run_action(
-            describe_kube,
+            services.cluster().describe_kube,
             lambda text: tab.note(f"/kube\n{text}"),
             quiet=True,
             on_error=lambda message: tab.note(f"/kube\n{first_line(message)}"),

@@ -13,7 +13,6 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from kubescope import cluster
 from kubescope.sdk.errors import ClusterError
 from kubescope.sdk.models import (
     RESOURCE_VIEWS,
@@ -26,7 +25,8 @@ from kubescope.sdk.models import (
 )
 from kubescope.sdk.redact import redact
 
-from kubescope_gabi.actions import Request, parse_time
+from kubescope.gabi import services
+from kubescope.gabi.actions import Request, parse_time
 
 RESULT_LIMIT = 20_000  # characters of one answer that go to the assistant
 ROW_LIMIT = 300  # rows of a list that go to the assistant
@@ -53,7 +53,7 @@ def _container(context: str, namespace: str, pod: str) -> str:
     """The container of a Pod, when the assistant named none: its only main
     container, never an init one that comes first in the list; with several
     main containers, it is for the person to choose."""
-    document: dict[str, Any] = cluster.get_resource_details(
+    document: dict[str, Any] = services.cluster().get_resource_details(
         context, "Pod", namespace, pod
     )
     spec = document.get("spec") or {}
@@ -123,11 +123,13 @@ def _rows(lines: list[str]) -> str:
 def _list(context: str, view: str, namespace: str) -> str:
     scope = namespace or None
     if view == "pods":
-        return _rows([_pod_row(pod) for pod in cluster.get_pods(context, scope)[1]])
+        return _rows(
+            [_pod_row(pod) for pod in services.cluster().get_pods(context, scope)[1]]
+        )
     if view in WORKLOAD_VIEWS:
         kinds = (WORKLOAD_VIEWS[view],)
-        found = cluster.get_workloads(context, scope, kinds)[1]
-        usage = cluster.get_usage(context, scope)  # restarts, CPU and memory
+        found = services.cluster().get_workloads(context, scope, kinds)[1]
+        usage = services.cluster().get_usage(context, scope)  # restarts, CPU and memory
         return _rows(
             [
                 _workload_row(
@@ -146,7 +148,9 @@ def _list(context: str, view: str, namespace: str) -> str:
             ]
         )
     if view in RESOURCE_VIEWS:
-        found = cluster.get_resources(context, scope, RESOURCE_VIEWS[view])[1]
+        found = services.cluster().get_resources(context, scope, RESOURCE_VIEWS[view])[
+            1
+        ]
         return _rows([_resource_row(resource) for resource in found])
     raise ValueError(f"The list {view} cannot be read this way")
 
@@ -161,9 +165,9 @@ def _declared(resources: dict[str, Any], kind: str) -> str:
 def _usage(context: str, namespace: str, pod: str) -> str:
     """The live usage of each container of a Pod, beside what it asks for and
     what it may use."""
-    document = cluster.get_resource_details(context, "Pod", namespace, pod)
+    document = services.cluster().get_resource_details(context, "Pod", namespace, pod)
     containers = (document.get("spec") or {}).get("containers") or []
-    live = cluster.get_pod_container_usage(context, namespace, pod)
+    live = services.cluster().get_pod_container_usage(context, namespace, pod)
     lines = [
         f"Live usage of the Pod {namespace}/{pod}, by container, from metrics-server."
         if live
@@ -194,7 +198,7 @@ def _usage(context: str, namespace: str, pod: str) -> str:
 
 
 def _events(context: str, namespace: str, name: str) -> str:
-    found = cluster.get_resources(context, namespace or None, "Event")[1]
+    found = services.cluster().get_resources(context, namespace or None, "Event")[1]
     return _rows(
         [
             _resource_row(event)
@@ -213,7 +217,7 @@ def _read(request: Request, context: str) -> str:
     if request.action.name == "get_events":
         return _events(context, args["namespace"], args.get("name", ""))
     if request.action.name == "get_details":
-        document = cluster.get_resource_details(
+        document = services.cluster().get_resource_details(
             context, args["kind"], args["namespace"], args["name"]
         )
         return _cut(json.dumps(document, indent=2, default=str))
@@ -230,14 +234,14 @@ def _log_window(context: str, args: dict[str, Any], container: str) -> str:
     since = parse_time(args.get("since", ""))
     seconds = args.get("since_minutes", 0) * 60
     whole = not (since or seconds)  # no window: the log, if it fits an answer
-    log = cluster.get_pod_logs(
+    log = services.cluster().get_pod_logs(
         context,
         args["namespace"],
         args["pod"],
         container,
         since_time=_second(since) if since else None,
         since_seconds=seconds,
-        limit_bytes=RESULT_LIMIT + 1 if whole else cluster.LOG_WINDOW_BYTES,
+        limit_bytes=RESULT_LIMIT + 1 if whole else services.cluster().LOG_WINDOW_BYTES,
     )
     if whole and len(log.encode()) > RESULT_LIMIT:
         return (

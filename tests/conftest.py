@@ -55,7 +55,7 @@ def no_blocking_dialogs(monkeypatch):
 def no_chosen_assistant_programs():
     """The program, the model and the effort chosen for an assistant are kept
     in the runner; a test starts without."""
-    from kubescope_gabi import runner
+    from kubescope.gabi import runner
 
     saved = [
         dict(d)
@@ -76,6 +76,40 @@ def no_chosen_assistant_programs():
 @pytest.fixture(autouse=True)
 def still_panel(monkeypatch):
     """The panel of Gabi shows and goes at once."""
-    from kubescope_gabi import panel
+    from kubescope.gabi import panel
 
     monkeypatch.setattr(panel, "ANIMATION_MS", 0)
+
+
+class LentApp:
+    """The context that the app gives Gabi, with the real bridges of the app and
+    the write mode in the hand of the test."""
+
+    id = "kubescope.gabi"
+    permissions = frozenset({"cluster.read", "cluster.write", "ui.window"})
+
+    def __init__(self) -> None:
+        from kubescope.extensions.cluster_access import ClusterBridge, WritesBridge
+
+        from kubescope import theme
+
+        self.write_mode = True
+        self.cluster = ClusterBridge()
+        self.writes = WritesBridge(lambda: self.write_mode)
+
+        class Ui:
+            def themed(self, color: str, text: bool = False) -> str:
+                return theme.themed(color, text=text)
+
+        self.ui = Ui()
+
+
+@pytest.fixture(autouse=True)
+def app():
+    """Gabi is activated with the services of the app, as she is in the window."""
+    from kubescope.gabi import services
+
+    lent = LentApp()
+    services.install(lent)  # type: ignore[arg-type]
+    yield lent
+    services.install(None)
