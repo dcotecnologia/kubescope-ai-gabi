@@ -13,9 +13,13 @@ her in **Settings → Extensions**, where you can also install her from this rep
 
 ## Install
 
-In KubeScope, open **Settings → Extensions → Install from GitHub...** and type
-`dcotecnologia/kubescope-gabi`, or **Install from a zip...** with a zip from the releases. A dialog
-shows where it came from, its permissions and the sha256 before anything of it runs.
+In KubeScope, open **Settings → Extensions** and either:
+
+- **Install from GitHub...** and type `dcotecnologia/kubescope-gabi`, or
+- **Install from a folder...** and pick the `kubescope-extension.toml` of a clone of this repository.
+
+KubeScope looks for the `kubescope-extension.toml` itself, so there is no zip to build. A dialog shows
+where it came from, its permissions and the sha256 of its content before anything of it runs.
 
 ## Develop
 
@@ -30,11 +34,15 @@ workspace/
 
 ```bash
 uv sync                      # installs the app from ../kubescope, editable
-uv run pytest                # the tests
+uv run pytest tests/test_x.py
 uv run ruff check . && uv run ruff format --check .
 uv run pyright
-python tools/build_zip.py    # dist/kubescope-gabi-<version>.zip, what the app installs
 ```
+
+To see your changes in the app as you make them, install this folder in **development mode**: in
+**Settings → Extensions** tick **Development mode**, then **Install from a folder...** and pick the
+`kubescope-extension.toml`. The app runs Gabi from this folder, without a copy, and reloads her when a
+file changes.
 
 ## Layout
 
