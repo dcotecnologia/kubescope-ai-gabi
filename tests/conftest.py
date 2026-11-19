@@ -217,3 +217,10 @@ def window(monkeypatch):
     shown.context_combo.blockSignals(False)
     yield shown
     shown.close()
+
+
+@pytest.fixture(autouse=True)
+def no_recommended_extensions(monkeypatch):
+    """The window of the app downloads what it recommends the first time it
+    runs; a test never reaches GitHub."""
+    monkeypatch.setattr("kubescope.extensions.defaults.DEFAULTS", ())
