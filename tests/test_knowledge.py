@@ -74,14 +74,10 @@ def test_her_age_counts_the_birthday_that_has_not_come_yet() -> None:
 
 
 def test_she_speaks_every_language_of_the_app() -> None:
-    told = knowledge.system_prompt(
-        "Portuguese", False, ("English", "German", "Portuguese")
-    )
+    names = ("English", "Portuguese", "Japanese", "Arabic", "Chinese (Taiwan)")
+    told = knowledge.system_prompt("Portuguese", False, names)
 
-    assert "You speak every language of the client: English, German, Portuguese" in told
-    for name in ("Portuguese", "Japanese", "Arabic", "Hebrew", "Thai", "Hindi"):
-        assert name in told
-    assert "Chinese (Taiwan)" in told
+    assert f"You speak every language of the client: {', '.join(names)}" in told
     assert "Gabi is a woman" in told and told.index("Gabi is a woman") < told.index(
         "Answer in Portuguese"
     )
