@@ -8,8 +8,10 @@ credentials and stores none.
 Gabi is an **extension**. KubeScope ships with her installed, and you can uninstall and reinstall
 her in **Settings → Extensions**, where you can also install her from this repository.
 
-> Work in progress: this project was extracted from the app. It is waiting for the app to load
-> extensions with `activate(ctx)`, so `kubescope.gabi.activate` does not exist yet.
+She depends on the [KubeScope SDK](https://github.com/dcotecnologia/kubescope-sdk) and on Qt, and on
+nothing else of KubeScope: the app runs her with `activate(ctx)` and gives her, through `ctx`, what she
+needs (the cluster, the window, the theme, her preferences, the terminal). A test keeps her imports to
+`kubescope.sdk` and herself, so she can be installed and run without the app being importable.
 
 ## Install
 
@@ -23,17 +25,20 @@ where it came from, its permissions and the sha256 of its content before anythin
 
 ## Develop
 
-Gabi depends on KubeScope the way a pytest plugin depends on pytest. While the extension API is
-unstable (`api = "0"`), develop against a checkout of the app next to this one:
+She is a project of her own, in the namespace `kubescope` that she shares with the app and the SDK
+(there is no `__init__.py` in it). Her tests run her inside the window of the app and lend her its real
+services, so the app is a development dependency only. While the extension API is unstable
+(`api = "0"`), develop against a checkout of the app next to this one:
 
 ```text
 workspace/
 ├── kubescope/        # the app
+├── kubescope-sdk/    # the SDK
 └── kubescope-gabi/   # this project
 ```
 
 ```bash
-uv sync                      # installs the app from ../kubescope, editable
+uv sync                      # installs the SDK from GitHub and the app from ../kubescope, editable
 uv run pytest tests/test_x.py
 uv run ruff check . && uv run ruff format --check .
 uv run pyright

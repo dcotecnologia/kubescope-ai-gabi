@@ -108,3 +108,31 @@ def test_a_file_that_cannot_be_written_is_only_logged(tmp_path, caplog) -> None:
 
     assert "Could not save the assistant history" in caplog.text
     assert history.entries("prod") == [("user", "a")]
+
+
+def test_the_conversations_the_app_kept_move_to_the_folder_of_the_extension_once(
+    tmp_path,
+) -> None:
+    from kubescope.sdk.paths import config_directory
+
+    from kubescope.gabi.history import OLD_NAME, adopt_old_history
+
+    old = config_directory() / OLD_NAME
+    old.parent.mkdir(parents=True, exist_ok=True)
+    old.write_text('{"prod": []}')
+    new = tmp_path / "data" / "history.json"
+
+    adopt_old_history(new)
+
+    assert new.read_text() == '{"prod": []}' and not old.exists()
+    old.write_text("another")
+    adopt_old_history(new)  # the one she has is not replaced
+    assert new.read_text() == '{"prod": []}' and old.read_text() == "another"
+
+
+def test_without_an_old_file_nothing_is_created(tmp_path) -> None:
+    from kubescope.gabi.history import adopt_old_history
+
+    adopt_old_history(tmp_path / "data" / "history.json")
+
+    assert not (tmp_path / "data").exists()

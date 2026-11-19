@@ -4,9 +4,9 @@ It is added to the instructions of every chat, before the actions it may
 ask for. No Qt.
 """
 
+from collections.abc import Sequence
 from datetime import date
 
-from kubescope import i18n
 from kubescope.gabi import actions
 from kubescope.gabi.runner import BORN, HOMETOWN, NAME, SYSTEM_PROMPT
 
@@ -78,12 +78,12 @@ def persona(today: date) -> str:
     )
 
 
-def language_rule(language: str) -> str:
-    """Which language the assistant answers in."""
+def language_rule(language: str, languages: Sequence[str] = ("English",)) -> str:
+    """Which language the assistant answers in, and the ones the client has."""
     return (
         f"Answer in {language}, the language of the client, unless the person "
         "writes to you in another one; then answer in theirs. You speak every "
-        f"language of the client: {', '.join(i18n.english_names())}. Keep the names "
+        f"language of the client: {', '.join(languages)}. Keep the names "
         "of Kubernetes kinds, fields, commands and the JSON of the actions as they "
         "are."
     )
@@ -137,7 +137,11 @@ WRITE = (
 )
 
 
-def system_prompt(language: str = "English", write_mode: bool = False) -> str:
+def system_prompt(
+    language: str = "English",
+    write_mode: bool = False,
+    languages: Sequence[str] = ("English",),
+) -> str:
     """The instructions of a chat, in the language of the client and for the
     mode it is in: with the write mode off, nothing that changes a cluster is
     offered."""
@@ -145,7 +149,7 @@ def system_prompt(language: str = "English", write_mode: bool = False) -> str:
         (
             SYSTEM_PROMPT,
             persona(date.today()),
-            language_rule(language),
+            language_rule(language, languages),
             SCOPE,
             APP,
             WRITE if write_mode else READ_ONLY,

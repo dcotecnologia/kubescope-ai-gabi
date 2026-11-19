@@ -129,6 +129,7 @@ class LentApp:
         self.language = "auto"
         self.resolved_language = "en_US"
         self.language_name = "English"
+        self.language_names = ("English", "Portuguese")
         self.app = self  # what the app says about itself is on the same object
         self.data_directory = data_directory
         self.settings = Store()

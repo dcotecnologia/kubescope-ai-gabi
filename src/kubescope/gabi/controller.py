@@ -341,7 +341,8 @@ class GabiController(QObject):
         """What the assistant is told: the language of the app and the mode it
         is in, since with the write mode off it has nothing that changes a
         cluster."""
-        return system_prompt(self.port.app.language_name, self.port.app.write_mode)
+        app = self.port.app
+        return system_prompt(app.language_name, app.write_mode, app.language_names)
 
     def refresh_system(self) -> None:
         """Tell the open chat about a change of language or of mode."""

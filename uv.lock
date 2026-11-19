@@ -281,12 +281,13 @@ name = "kubescope-gabi"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [
-    { name = "kubescope" },
     { name = "kubescope-sdk" },
+    { name = "pyside6" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "kubescope" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
@@ -294,12 +295,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "kubescope", editable = "../kubescope" },
     { name = "kubescope-sdk", git = "https://github.com/dcotecnologia/kubescope-sdk?branch=main" },
+    { name = "pyside6", specifier = ">=6.12.0" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "kubescope", editable = "../kubescope" },
     { name = "pyright", specifier = ">=1.1.414" },
     { name = "pytest", specifier = ">=9.2.0" },
     { name = "ruff", specifier = ">=0.17.5" },
@@ -308,7 +310,7 @@ dev = [
 [[package]]
 name = "kubescope-sdk"
 version = "0.1.0"
-source = { git = "https://github.com/dcotecnologia/kubescope-sdk?branch=main#c5b8bbf9ad855da538592fd431536a0bc794b40d" }
+source = { git = "https://github.com/dcotecnologia/kubescope-sdk?branch=main#2f889396ddac4aa1c6bce53c8720abc5d706791a" }
 
 [[package]]
 name = "multidict"

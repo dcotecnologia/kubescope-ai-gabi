@@ -64,6 +64,7 @@ def test_the_manifest_asks_for_what_she_uses() -> None:
     manifest = read_manifest(ROOT)
 
     assert manifest.entry == "kubescope.gabi:activate"
+    assert manifest.commands == ("chat", "assistant")
     assert manifest.permissions >= {
         "cluster.read",
         "cluster.write",

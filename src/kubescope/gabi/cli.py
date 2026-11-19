@@ -345,7 +345,9 @@ def run(namespace: argparse.Namespace) -> int:
         context = terminal.choose_context(namespace.context)
         session = ChatSession(
             assistant,
-            system=system_prompt(_language(), ctx.app.write_mode),
+            system=system_prompt(
+                _language(), ctx.app.write_mode, ctx.app.language_names
+            ),
         )
         history = ctx.data_directory / "history.json"
         adopt_old_history(history)

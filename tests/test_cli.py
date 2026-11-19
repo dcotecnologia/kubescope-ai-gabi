@@ -1,40 +1,16 @@
 import io
 import sys
-from typing import cast
 
 import pytest
 from kubescope.sdk.errors import ClusterError
-from kubescope.settings import Settings
 
-from kubescope import cluster, writes
+from kubescope import writes
 from kubescope.gabi import cli as cli_chat
 from kubescope.gabi import runner
 from kubescope.gabi.actions import FENCE
 from kubescope.gabi.history import History
 from kubescope.gabi.runner import Assistant, AssistantError
 from kubescope.gabi.session import ChatSession
-
-
-class FakeSettings:
-    assistant_enabled = True
-    assistant_consent = True
-    assistant = ""
-    write_mode = False
-    language = "auto"
-    kubeconfig_files: list[str] = []
-    sign_in_commands: dict[str, str] = {}
-    integration_accounts: list[dict] = []
-    assistant_programs: dict[str, str] = {}
-    assistant_models: dict[str, str] = {}
-    assistant_efforts: dict[str, str] = {}
-    saved = 0
-
-    def save(self):
-        FakeSettings.saved += 1
-
-
-def _fake() -> Settings:
-    return cast(Settings, FakeSettings())
 
 
 def _assistant(key="claude", defaults=None):
@@ -65,16 +41,8 @@ def block(**fields):
 
 
 @pytest.fixture(autouse=True)
-def world(monkeypatch, tmp_path):
-    FakeSettings.assistant_enabled = True
-    FakeSettings.assistant_consent = True
-    FakeSettings.assistant = ""
-    FakeSettings.write_mode = False
-    FakeSettings.saved = 0
-    monkeypatch.setattr(cli_chat, "Settings", FakeSettings)
-    monkeypatch.setattr(cli_chat, "config_directory", lambda: tmp_path)
-    monkeypatch.setattr(cluster, "configure", lambda *_: None)
-    monkeypatch.setattr(cluster, "list_contexts", lambda: (["a"], "a"))
+def world(monkeypatch, app):
+    app.preferences.assistant_consent = True  # the person agreed already
     monkeypatch.setattr(cli_chat, "installed_assistants", lambda: [_assistant()])
     monkeypatch.setattr(sys.stdin, "isatty", lambda: False)
     yield
@@ -101,10 +69,15 @@ def _typed(monkeypatch, *lines):
     monkeypatch.setattr("builtins.input", read)
 
 
-def _chat(tmp_path, write_mode=False, read=None):
+def _chat(tmp_path, write_mode=False, read=None, confirm=None):
     session = ChatSession(_assistant())
     chat = cli_chat.Chat(
-        session, "a", write_mode, History(tmp_path / "h.json"), read or (lambda *_: "R")
+        session,
+        "a",
+        write_mode,
+        History(tmp_path / "h.json"),
+        read or (lambda *_: "R"),
+        confirm or (lambda question: False),
     )
     return chat
 
@@ -114,15 +87,6 @@ def test_one_shot_message(monkeypatch, capsys):
     assert cli_chat.main(["--context", "a", "how", "are", "you"]) == 0
     assert capsys.readouterr().out == "Hello there\n"
     assert "User: how are you" in brain.prompts[0]
-
-
-def test_assistant_is_an_alias_of_chat():
-    import argparse
-
-    commands = argparse.ArgumentParser().add_subparsers(dest="command")
-    cli_chat.add_command(commands)
-
-    assert set(commands.choices) == {"chat", "assistant"}
 
 
 def test_the_conversation(monkeypatch, capsys, tmp_path):
@@ -139,14 +103,14 @@ def test_the_conversation_ends_with_ctrl_d(monkeypatch):
     assert cli_chat.main(["--context", "a"]) == 0
 
 
-def test_the_conversation_is_resumed(monkeypatch, tmp_path):
-    History(tmp_path / "assistant_history.json").set(
+def test_the_conversation_is_resumed(monkeypatch, app):
+    History(app.data_directory / "history.json").set(
         "a", [("user", "before"), ("assistant", "yes"), ("app", "note")]
     )
     brain = _brain(monkeypatch, ["ok"])
     assert cli_chat.main(["--context", "a", "now"]) == 0
     assert "User: before" in brain.prompts[0] and "App" not in brain.prompts[0]
-    kept = History(tmp_path / "assistant_history.json").entries("a")
+    kept = History(app.data_directory / "history.json").entries("a")
     assert kept[-2:] == [("user", "now"), ("assistant", "ok")]
 
 
@@ -161,15 +125,15 @@ def test_stopping_an_answer(monkeypatch, capsys):
     assert "[stopped]" in capsys.readouterr().err
 
 
-def test_a_failed_answer(monkeypatch, capsys, tmp_path):
+def test_a_failed_answer(monkeypatch, capsys, app):
     _brain(monkeypatch, AssistantError("no sign in"))
     assert cli_chat.main(["--context", "a", "q"]) == 0
     assert "could not answer: no sign in" in capsys.readouterr().err
-    assert History(tmp_path / "assistant_history.json").entries("a") == []
+    assert History(app.data_directory / "history.json").entries("a") == []
 
 
-def test_the_assistant_is_off(capsys):
-    FakeSettings.assistant_enabled = False
+def test_the_assistant_is_off(capsys, app):
+    app.preferences.assistant_enabled = False
     assert cli_chat.main(["--context", "a", "q"]) == 1
     assert "assistant is off" in capsys.readouterr().err
 
@@ -180,49 +144,49 @@ def test_no_program_installed(monkeypatch, capsys):
     assert "installed and signed in" in capsys.readouterr().err
 
 
-def test_choosing_the_program(monkeypatch, capsys):
+def test_choosing_the_program(monkeypatch, capsys, app):
     both = [_assistant("claude"), _assistant("codex")]
     monkeypatch.setattr(cli_chat, "installed_assistants", lambda: both)
-    settings = _fake()
+    settings = app.preferences
     assert cli_chat._choose(settings, None).key == "claude"
     assert cli_chat._choose(settings, "codex").key == "codex"
-    FakeSettings.assistant = "codex"
+    settings.assistant = "codex"
     assert cli_chat._choose(settings, None).key == "codex"
-    FakeSettings.assistant = "gone"
+    settings.assistant = "gone"
     assert cli_chat._choose(settings, None).key == "claude"
     monkeypatch.setattr(cli_chat, "installed_assistants", lambda: both[:1])
     with pytest.raises(ClusterError, match="codex is not installed"):
         cli_chat._choose(settings, "codex")
 
 
-def test_consent_needs_a_terminal(capsys):
-    FakeSettings.assistant_consent = False
+def test_consent_needs_a_terminal(capsys, app):
+    app.preferences.assistant_consent = False
     assert cli_chat.main(["--context", "a", "q"]) == 1
     assert "once on a terminal" in capsys.readouterr().err
 
 
-def test_consent_given_and_refused(monkeypatch, capsys):
-    FakeSettings.assistant_consent = False
+def test_consent_given_and_refused(monkeypatch, capsys, app):
+    app.preferences.assistant_consent = False
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
-    monkeypatch.setattr(cli_chat, "_confirm", lambda *_: False)
+    assert app.cli is not None
+    app.cli.answer = False
     assert cli_chat.main(["--context", "a", "q"]) == 1
     assert "not allowed" in capsys.readouterr().err
-    monkeypatch.setattr(cli_chat, "_confirm", lambda *_: True)
-    settings = _fake()
-    cli_chat._consent(settings, _assistant())
-    assert settings.assistant_consent is True and FakeSettings.saved == 1
+    assert app.cli.asked == ["Use the assistant?"]
+    assert app.preferences.assistant_consent is False
+    app.cli.answer = True
+    cli_chat._consent(app.preferences, _assistant(), app.cli.confirm)
+    assert app.preferences.assistant_consent is True
+    assert app.settings["consent"] is True  # and it was saved with the settings
 
 
-def test_consent_that_cannot_be_saved(monkeypatch, capsys):
-    FakeSettings.assistant_consent = False
+def test_consent_that_cannot_be_saved(monkeypatch, capsys, app):
+    app.preferences.assistant_consent = False
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
-    monkeypatch.setattr(cli_chat, "_confirm", lambda *_: True)
+    app.settings.failure = OSError(13, "denied")
 
-    def fail(self):
-        raise OSError(13, "denied")
+    cli_chat._consent(app.preferences, _assistant(), lambda question: True)
 
-    monkeypatch.setattr(FakeSettings, "save", fail)
-    cli_chat._consent(_fake(), _assistant())
     assert "Could not save the settings" in capsys.readouterr().err
 
 
@@ -231,39 +195,40 @@ def test_no_context_without_terminal(capsys):
     assert "Pass --context" in capsys.readouterr().err
 
 
-def test_interrupted_at_the_start(monkeypatch):
+def test_interrupted_at_the_start(monkeypatch, app):
     def stop(*_):
         raise KeyboardInterrupt
 
-    monkeypatch.setattr(cli_chat, "_context", stop)
+    assert app.cli is not None
+    monkeypatch.setattr(app.cli, "choose_context", stop)
     assert cli_chat.main([]) == 130
 
 
-def test_the_choices_of_the_program_are_given_to_the_runner():
-    FakeSettings.assistant_programs = {"claude": "/x/claude"}
-    FakeSettings.assistant_models = {"claude": "big"}
-    FakeSettings.assistant_efforts = {}
-    cli_chat._sync_choices(_fake())
+def test_the_choices_of_the_program_are_given_to_the_runner(app):
+    settings = app.preferences
+    settings.assistant_programs = {"claude": "/x/claude"}
+    settings.assistant_models = {"claude": "big"}
+    settings.assistant_efforts = {}
+    cli_chat._sync_choices(settings)
     assert runner.CUSTOM_PROGRAMS == {"claude": "/x/claude"}
     assert runner.CUSTOM_MODELS["claude"] == "big"
-    FakeSettings.assistant_programs = {}
-    FakeSettings.assistant_models = {}
 
 
-def test_the_defaults_of_the_program(monkeypatch):
+def test_the_defaults_of_the_program(monkeypatch, app):
     one = _assistant("claude", defaults=lambda: ("small", "high"))
     monkeypatch.setattr(cli_chat, "ASSISTANTS", {"claude": one})
-    cli_chat._sync_choices(_fake())
+    cli_chat._sync_choices(app.preferences)
     assert runner.CUSTOM_MODELS == {"claude": "small"}
     assert runner.CUSTOM_EFFORTS == {"claude": "high"}
 
 
-def test_the_language_falls_back_to_english(monkeypatch):
-    assert cli_chat._language(_fake())
-    monkeypatch.setattr(
-        "kubescope.i18n.language_name", lambda _c: (_ for _ in ()).throw(KeyError)
-    )
-    assert cli_chat._language(_fake()) == "English"
+def test_the_language_is_the_one_of_the_app_and_falls_back_to_english(app):
+    app.language_name = "Portuguese"
+    assert cli_chat._language() == "Portuguese"
+
+    del app.language_name  # the app cannot say it
+
+    assert cli_chat._language() == "English"
 
 
 def test_the_action_blocks_are_not_shown(monkeypatch, capsys):
@@ -349,9 +314,8 @@ def test_a_write_confirmed_cancelled_and_failed(monkeypatch, tmp_path, capsys):
     monkeypatch.setattr(writes, "scale_deployment", lambda *a: calls.append(a))
     monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
     answers = iter([True, False, True])
-    monkeypatch.setattr(cli_chat, "_confirm", lambda *_: next(answers))
     _brain(monkeypatch, [WRITE], [WRITE], [WRITE])
-    chat = _chat(tmp_path, write_mode=True)
+    chat = _chat(tmp_path, write_mode=True, confirm=lambda question: next(answers))
     chat.ask("1")
     assert calls == [("a", "ns", "api", 2)]
     chat.ask("2")
@@ -396,9 +360,24 @@ def test_the_prompt_is_painted_for_readline(monkeypatch):
     assert cli_chat._prompt() == "you> "
 
 
-def test_the_contexts_are_painted(monkeypatch, capsys):
-    monkeypatch.setenv("FORCE_COLOR", "1")
-    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
-    monkeypatch.setattr("builtins.input", lambda _p: "")
-    assert cli_chat._context(None) == "a"
-    assert "\x1b[32m(current)\x1b[0m" in capsys.readouterr().out
+def test_the_old_conversations_move_when_the_command_runs(monkeypatch, app):
+    from kubescope.sdk.paths import config_directory
+
+    from kubescope.gabi.history import OLD_NAME
+
+    old = config_directory() / OLD_NAME
+    old.parent.mkdir(parents=True, exist_ok=True)
+    old.write_text("{}")
+    _brain(monkeypatch, ["hi"])
+
+    assert cli_chat.main(["--context", "a", "q"]) == 0
+
+    assert (app.data_directory / "history.json").exists() and not old.exists()
+
+
+def test_the_command_says_it_needs_the_terminal_when_it_is_not_there(capsys, app):
+    app.cli = None
+
+    assert cli_chat.main(["--context", "a", "q"]) == 1
+
+    assert "runs in the terminal" in capsys.readouterr().err
