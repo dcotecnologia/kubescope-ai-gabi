@@ -5,6 +5,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
+from kubescope.sdk.errors import ClusterError
 
 
 @pytest.fixture(autouse=True)
@@ -81,19 +82,57 @@ def still_panel(monkeypatch):
     monkeypatch.setattr(panel, "ANIMATION_MS", 0)
 
 
-class LentApp:
-    """The context that the app gives Gabi, with the real bridges of the app and
-    the write mode in the hand of the test."""
+class Store(dict):
+    """What ctx.settings is: a dictionary that is saved when a key is set."""
 
-    id = "kubescope.gabi"
-    permissions = frozenset({"cluster.read", "cluster.write", "ui.window"})
+    failure: OSError | None = None  # a disk that cannot be written
+
+    def get(self, key, default=None):
+        return super().get(key, default)
+
+    def set(self, key, value) -> None:
+        if self.failure is not None:
+            raise self.failure
+        self[key] = value
+
+
+class LentTerminal:
+    """What the terminal lends to a command (`ctx.cli`)."""
 
     def __init__(self) -> None:
+        self.answer = True
+        self.asked: list[str] = []
+
+    def choose_context(self, name):
+        if name:
+            return name
+        raise ClusterError("Pass --context (the choice is asked on a terminal only)")
+
+    def confirm(self, question: str) -> bool:
+        self.asked.append(question)
+        return self.answer
+
+
+class LentApp:
+    """The context that the app gives Gabi, with the real bridges of the app and
+    the write mode, the settings and the terminal in the hand of the test."""
+
+    id = "kubescope.gabi"
+    permissions = frozenset({"cluster.read", "cluster.write", "ui.window", "cli"})
+
+    def __init__(self, data_directory) -> None:
         from kubescope.extensions.cluster_access import ClusterBridge, WritesBridge
 
         from kubescope import theme
 
         self.write_mode = True
+        self.language = "auto"
+        self.resolved_language = "en_US"
+        self.language_name = "English"
+        self.app = self  # what the app says about itself is on the same object
+        self.data_directory = data_directory
+        self.settings = Store()
+        self.cli: LentTerminal | None = LentTerminal()
         self.cluster = ClusterBridge()
         self.writes = WritesBridge(lambda: self.write_mode)
 
@@ -103,13 +142,20 @@ class LentApp:
 
         self.ui = Ui()
 
+    @property
+    def preferences(self):
+        """Her preferences, as the code reads them."""
+        from kubescope.gabi.settings import GabiSettings
+
+        return GabiSettings(self.settings)
+
 
 @pytest.fixture(autouse=True)
-def app():
+def app(tmp_path):
     """Gabi is activated with the services of the app, as she is in the window."""
     from kubescope.gabi import services
 
-    lent = LentApp()
+    lent = LentApp(tmp_path / "data")
     services.install(lent)  # type: ignore[arg-type]
     yield lent
     services.install(None)

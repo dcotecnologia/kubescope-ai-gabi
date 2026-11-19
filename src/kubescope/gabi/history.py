@@ -11,6 +11,7 @@ import json
 import logging
 from pathlib import Path
 
+from kubescope.sdk.paths import config_directory
 from kubescope.sdk.redact import redact
 
 logger = logging.getLogger(__name__)
@@ -89,3 +90,15 @@ class History:
             temporary.replace(self.path)
         except OSError as error:
             logger.warning("Could not save the assistant history: %s", error)
+
+
+OLD_NAME = "assistant_history.json"  # where the app kept the conversations
+
+
+def adopt_old_history(new: Path) -> None:
+    """The conversations the app kept for her before she was an extension move to
+    the folder of her own, once."""
+    old = config_directory() / OLD_NAME
+    if old.is_file() and not new.exists():
+        new.parent.mkdir(parents=True, exist_ok=True)
+        old.replace(new)

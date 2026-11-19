@@ -16,17 +16,16 @@ from kubescope.sdk import (
     WRITE_MODE_CHANGED,
     Context,
 )
-from kubescope.sdk.paths import config_directory
 from PySide6.QtWidgets import QMessageBox
 
 from kubescope.gabi import cli, services
 from kubescope.gabi.controller import GabiController, GabiPort
+from kubescope.gabi.history import adopt_old_history
 from kubescope.gabi.settings import GabiSettings
 from kubescope.gabi.settings_panel import GabiSettingsPanel
 
 TITLE = "Gabi"  # the section of the Settings, and its button
 SHORTCUT = "kubescope.gabi.ask"
-OLD_HISTORY = "assistant_history.json"  # where the app kept the conversations
 
 _ICONS = {
     QMessageBox.Icon.Warning: "warning",
@@ -43,20 +42,10 @@ def activate(ctx: Context) -> None:
     ctx.add_cli_command("assistant", cli.main)
 
 
-def _adopt_old_history(ctx: Context) -> None:
-    """The conversations the app kept for her before she was an extension move to
-    the folder of her own, once."""
-    old = config_directory() / OLD_HISTORY
-    new = ctx.data_directory / "history.json"
-    if old.is_file() and not new.exists():
-        new.parent.mkdir(parents=True, exist_ok=True)
-        old.replace(new)
-
-
 def _in_the_window(ctx: Context, settings: GabiSettings) -> None:
     ui = ctx.ui
     assert ui is not None
-    _adopt_old_history(ctx)
+    adopt_old_history(ctx.data_directory / "history.json")
 
     def show_message(icon: QMessageBox.Icon, title: str, text: str) -> None:
         ui.show_message(_ICONS.get(icon, "information"), title, text)

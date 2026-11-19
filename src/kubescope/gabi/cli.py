@@ -13,18 +13,14 @@ import importlib
 import sys
 from collections.abc import Callable, Sequence
 
-from kubescope.cli_cluster import _confirm, _context
 from kubescope.sdk import ansi
 from kubescope.sdk.errors import ClusterError
-from kubescope.sdk.paths import config_directory
-from kubescope.settings import Settings
 
-from kubescope import cluster, integrations
-from kubescope.gabi import ASSISTANTS, actions, executor, runner
+from kubescope.gabi import ASSISTANTS, actions, executor, runner, services
 from kubescope.gabi import installed as installed_assistants
 from kubescope.gabi.actions import Invalid, Request
 from kubescope.gabi.dispatch import write_call
-from kubescope.gabi.history import Entry, History
+from kubescope.gabi.history import Entry, History, adopt_old_history
 from kubescope.gabi.knowledge import system_prompt
 from kubescope.gabi.runner import (
     COMPANY,
@@ -33,6 +29,7 @@ from kubescope.gabi.runner import (
     AssistantError,
 )
 from kubescope.gabi.session import ChatSession, Message
+from kubescope.gabi.settings import GabiSettings
 
 MAX_FOLLOW_UPS = 5  # reads the assistant may ask for after one question
 EXIT_WORDS = ("/exit", "/quit", "exit", "quit")
@@ -111,7 +108,7 @@ def _clean(text: str) -> str:
     return text.replace("\x1b", "")
 
 
-def _sync_choices(settings: Settings) -> None:
+def _sync_choices(settings: GabiSettings) -> None:
     """Tell the runner the program, the model and the effort of each assistant:
 
     the ones in the settings, or else the ones its program is set to
@@ -131,7 +128,7 @@ def _sync_choices(settings: Settings) -> None:
             runner.CUSTOM_EFFORTS[one.key] = effort
 
 
-def _choose(settings: Settings, wanted: str | None) -> Assistant:
+def _choose(settings: GabiSettings, wanted: str | None) -> Assistant:
     found = installed_assistants()
     if not found:
         names = " or ".join(one.name for one in ASSISTANTS.values())
@@ -143,7 +140,9 @@ def _choose(settings: Settings, wanted: str | None) -> Assistant:
     return chosen or found[0]
 
 
-def _consent(settings: Settings, assistant: Assistant) -> None:
+def _consent(
+    settings: GabiSettings, assistant: Assistant, confirm: Callable[[str], bool]
+) -> None:
     """Ask once whether what the assistant is told may leave this computer."""
     if settings.assistant_consent:
         return
@@ -153,20 +152,17 @@ def _consent(settings: Settings, assistant: Assistant) -> None:
             "assistant sends"
         )
     print(CONSENT.format(name=assistant.name), file=sys.stderr)
-    if not _confirm("Use the assistant?", False):
+    if not confirm("Use the assistant?"):
         raise ClusterError("The assistant was not allowed")
-    settings.assistant_consent = True
     try:
-        settings.save()
+        settings.assistant_consent = True
     except OSError as error:
         print(f"Could not save the settings: {error.strerror}", file=sys.stderr)
 
 
-def _language(settings: Settings) -> str:
+def _language() -> str:
     try:
-        from kubescope.i18n import language_name
-
-        return language_name(settings.language)
+        return services.context().app.language_name
     except Exception:  # the language is a courtesy; English is always right
         return "English"
 
@@ -179,12 +175,14 @@ class Chat:
         write_mode: bool,
         history: History,
         read: Callable[[Request, str], str] = executor.fetch,
+        confirm: Callable[[str], bool] = lambda question: False,
     ) -> None:
         self.session = session
         self.context = context
         self.write_mode = write_mode
         self.history = history
         self.read = read
+        self.confirm = confirm  # asks the person, in the terminal
         self.entries: list[Entry] = history.entries(context)
         for role, text in self.entries:
             if role in ("user", "assistant"):
@@ -287,7 +285,7 @@ class Chat:
             self.note(f"Cannot confirm {what} without a terminal; nothing was changed")
             return
         try:
-            if not _confirm(f"Run {what} on {self.context}?", False):
+            if not self.confirm(f"Run {what} on {self.context}?"):
                 self.note(f"Cancelled {what}")
                 return
             function, arguments = write_call(request, self.context)
@@ -334,28 +332,29 @@ def _loop(chat: Chat) -> int:
 
 def run(namespace: argparse.Namespace) -> int:
     try:
-        settings = Settings()
+        ctx = services.context()
+        terminal = ctx.cli
+        if terminal is None:
+            raise ClusterError("This command runs in the terminal")
+        settings = GabiSettings(ctx.settings)
         if not settings.assistant_enabled:
             raise ClusterError("The assistant is off; turn it on in Settings")
         _sync_choices(settings)
         assistant = _choose(settings, namespace.assistant)
-        _consent(settings, assistant)
-        integrations.load(settings.integration_accounts)
-        cluster.configure(
-            settings.kubeconfig_files,
-            settings.sign_in_commands,
-            integrations.kubeconfig_files(),
-        )
-        context = _context(namespace.context)
+        _consent(settings, assistant, terminal.confirm)
+        context = terminal.choose_context(namespace.context)
         session = ChatSession(
             assistant,
-            system=system_prompt(_language(settings), settings.write_mode),
+            system=system_prompt(_language(), ctx.app.write_mode),
         )
+        history = ctx.data_directory / "history.json"
+        adopt_old_history(history)
         chat = Chat(
             session,
             context,
-            settings.write_mode,
-            History(config_directory() / "assistant_history.json"),
+            ctx.app.write_mode,
+            History(history),
+            confirm=terminal.confirm,
         )
         if namespace.message:
             chat.ask(" ".join(namespace.message))
@@ -383,19 +382,6 @@ def _add_arguments(parser: argparse.ArgumentParser) -> None:
         nargs="*",
         help="ask this once and leave, instead of opening the conversation",
     )
-
-
-def add_command(commands: argparse._SubParsersAction) -> None:
-    """Register `chat`, and `assistant` as the same command, in the parser of
-    the app."""
-    for name in ("chat", "assistant"):
-        _add_arguments(
-            commands.add_parser(
-                name,
-                help=f"talk to {NAME}, the assistant, about a cluster"
-                + (" (same as chat)" if name == "assistant" else ""),
-            )
-        )
 
 
 def main(arguments: Sequence[str]) -> int:
