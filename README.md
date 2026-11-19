@@ -4,7 +4,6 @@
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdcotecnologia%2Fkubescope-ai-gabi%2Fbadges%2Fcoverage.json)](https://github.com/dcotecnologia/kubescope-ai-gabi/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.15](https://img.shields.io/badge/python-3.15-blue.svg)
-![Extension API 0](https://img.shields.io/badge/extension%20API-0-orange.svg)
 
 **Gabi** is the assistant of [KubeScope](https://github.com/dcotecnologia/kubescope). Ask about your
 cluster in plain language, in the chat in the corner of the window or in your terminal, and she reads the
