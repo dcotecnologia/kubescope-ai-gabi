@@ -1,7 +1,8 @@
 """The preferences of Gabi, kept in the settings of her extension.
 
-They are saved as they are set, and read as tolerant of damage as the settings
-of the app are: what does not fit is left out and the default is used.
+They are saved as they are set, and read as tolerant of damage as the
+settings of the app are: what does not fit is left out and the default
+is used.
 """
 
 from typing import Any, Protocol
@@ -111,7 +112,8 @@ class GabiSettings:
     @property
     def assistant_consent(self) -> bool:
         """True once the person agreed that what they ask the assistant, with
-        what it reads from the cluster, goes to the program of this computer."""
+        what it reads from the cluster, goes to the program of this
+        computer."""
         return self._store.get("consent", False) is True
 
     @assistant_consent.setter

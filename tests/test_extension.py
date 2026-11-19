@@ -20,7 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def run(window) -> ExtensionContext:
-    """Gabi, activated the way the app does it: with what her manifest asks for."""
+    """Gabi, activated the way the app does it: with what her manifest asks
+    for."""
     manifest = read_manifest(ROOT)
     ctx = ExtensionContext(manifest.id, manifest.permissions, window.extension_host)
     extension.activate(ctx)

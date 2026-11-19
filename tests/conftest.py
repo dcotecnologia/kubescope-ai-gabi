@@ -41,7 +41,8 @@ def still_windows(monkeypatch):
 
 @pytest.fixture(autouse=True)
 def no_blocking_dialogs(monkeypatch):
-    """A modal dialog nobody can answer would hang the run; fail fast instead."""
+    """A modal dialog nobody can answer would hang the run; fail fast
+    instead."""
     from PySide6.QtWidgets import QDialog, QMessageBox
 
     def refuse(*_args, **_kwargs):
@@ -114,8 +115,9 @@ class LentTerminal:
 
 
 class LentApp:
-    """The context that the app gives Gabi, with the real bridges of the app and
-    the write mode, the settings and the terminal in the hand of the test."""
+    """The context that the app gives Gabi, with the real bridges of the app
+    and the write mode, the settings and the terminal in the hand of the
+    test."""
 
     id = "kubescope.gabi"
     permissions = frozenset({"cluster.read", "cluster.write", "ui.window", "cli"})
@@ -153,7 +155,8 @@ class LentApp:
 
 @pytest.fixture(autouse=True)
 def app(tmp_path):
-    """Gabi is activated with the services of the app, as she is in the window."""
+    """Gabi is activated with the services of the app, as she is in the
+    window."""
     from kubescope.gabi import services
 
     lent = LentApp(tmp_path / "data")
@@ -163,7 +166,8 @@ def app(tmp_path):
 
 
 class _FakeRefreshWorker:
-    """Stands in for the worker that reads a cluster: it answers nothing, at once."""
+    """Stands in for the worker that reads a cluster: it answers nothing, at
+    once."""
 
     def __init__(self, *_args, **_kwargs) -> None:
         from PySide6.QtCore import QObject, Signal
@@ -188,7 +192,8 @@ class _FakeRefreshWorker:
 
 @pytest.fixture
 def window(monkeypatch):
-    """The window of the app, with a "prod" context and no cluster behind it."""
+    """The window of the app, with a "prod" context and no cluster behind
+    it."""
     import time
 
     from PySide6.QtWidgets import QApplication

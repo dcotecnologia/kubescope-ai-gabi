@@ -1,9 +1,10 @@
 """Gabi as an extension: what she asks of the app and what she adds to it.
 
-`activate(ctx)` is what the app calls when it runs her. In the window she adds
-the chat in the corner, its shortcut, and her section of the Settings; in the
-terminal she adds the command `chat`. What she reads and changes of a cluster,
-and everything else of the app, comes through `ctx`.
+`activate(ctx)` is what the app calls when it runs her. In the window
+she adds the chat in the corner, its shortcut, and her section of the
+Settings; in the terminal she adds the command `chat`. What she reads
+and changes of a cluster, and everything else of the app, comes through
+`ctx`.
 """
 
 from typing import Any

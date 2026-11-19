@@ -96,8 +96,8 @@ OLD_NAME = "assistant_history.json"  # where the app kept the conversations
 
 
 def adopt_old_history(new: Path) -> None:
-    """The conversations the app kept for her before she was an extension move to
-    the folder of her own, once."""
+    """The conversations the app kept for her before she was an extension move
+    to the folder of her own, once."""
     old = config_directory() / OLD_NAME
     if old.is_file() and not new.exists():
         new.parent.mkdir(parents=True, exist_ok=True)

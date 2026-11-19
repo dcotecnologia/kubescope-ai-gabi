@@ -13,9 +13,9 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.0.1] - 2026-11-19
 
-### Changed
+### Fixed
 
-- The manifest describes what she can do, so the card in **Settings → Extensions** says it
+- The card in **Settings → Extensions** did not say what she can do: the manifest now describes it
 
 ## [1.0.0] - 2026-11-19
 

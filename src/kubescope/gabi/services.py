@@ -1,9 +1,10 @@
 """What the app lends to Gabi, once she is activated.
 
-`activate(ctx)` hands the context to `install`, and the rest of the code asks
-for the cluster, the changes to it and the colors of the theme here, so that it
-never reaches into the app. Before she is activated (or without a window, in the
-terminal) the colors are what they are written as.
+`activate(ctx)` hands the context to `install`, and the rest of the code
+asks for the cluster, the changes to it and the colors of the theme
+here, so that it never reaches into the app. Before she is activated (or
+without a window, in the terminal) the colors are what they are written
+as.
 """
 
 from typing import Any

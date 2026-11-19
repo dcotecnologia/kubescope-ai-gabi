@@ -1,8 +1,9 @@
 """Her section of the Settings: whether the chat shows, which program answers,
 the model and the effort of each, and where the programs are.
 
-The window gives it a card, loads it when the Settings open and asks it to save
-with the rest; it does what the person typed through the functions it is given.
+The window gives it a card, loads it when the Settings open and asks it
+to save with the rest; it does what the person typed through the
+functions it is given.
 """
 
 from collections.abc import Callable
@@ -217,7 +218,10 @@ class GabiSettingsPanel(QWidget):
 
     def _programs(self) -> dict[str, str] | None:
         """The paths typed; None, with a notice, when one is not a program that
-        can be run. Empty ones are left out."""
+        can be run.
+
+        Empty ones are left out.
+        """
         programs: dict[str, str] = {}
         for one in ASSISTANTS.values():
             path = self._paths[one.key].text().strip()

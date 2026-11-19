@@ -36,7 +36,8 @@ from kubescope.gabi.tab import AssistantTab
 
 @dataclass
 class GabiPort:
-    """What the extension lends to Gabi; every call is looked up when it is made."""
+    """What the extension lends to Gabi; every call is looked up when it is
+    made."""
 
     settings: GabiSettings  # her own preferences
     app: App  # the write mode and the language of the app
@@ -135,8 +136,8 @@ class GabiController(QObject):
             self.dock.close()
 
     def close(self) -> None:
-        """The extension was unloaded: stop what the chat runs and take Gabi out
-        of the window."""
+        """The extension was unloaded: stop what the chat runs and take Gabi
+        out of the window."""
         self.end_chat()
         self.dock.dispose()
         self.port.reserve_corner(0)
