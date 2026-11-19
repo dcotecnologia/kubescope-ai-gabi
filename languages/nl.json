@@ -1,0 +1,56 @@
+{
+    "name": "Nederlands",
+    "rtl": false,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "Geschiedenis wissen",
+            "Close": "Sluiten",
+            "Open in a window of its own": "Openen in een eigen venster",
+            "Put it back in the window": "Terugzetten in het venster",
+            "Settings": "Instellingen"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(bijgevoegd: {names})",
+            "(read) {what}": "(gelezen) {what}",
+            "App": "App",
+            "Ask Gabi about the cluster or ask for an action...": "Vraag Gabi iets over het cluster of om een actie...",
+            "At most {count} files go with a question.": "Bij een vraag kunnen maximaal {count} bestanden mee.",
+            "Attach": "Bijvoegen",
+            "Cancel": "Annuleren",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "Hallo, ik ben {name} van {company}. Ik ken Kubernetes en KubeScope goed. Vraag me gerust naar wat u op het scherm ziet, laat me een probleem onderzoeken, of vraag me u ergens naartoe te brengen in de app.",
+            "Ignored an action: {why}": "Een actie genegeerd: {why}",
+            "Open {name}": "{name} openen",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "Alleen-lezenmodus: er is niets gewijzigd. Schakel de schrijfmodus in bij Instellingen om {what} toe te staan.",
+            "Run": "Uitvoeren",
+            "See what is attached.": "Bekijk wat is bijgevoegd.",
+            "Send": "Verzenden",
+            "Stop": "Stoppen",
+            "Stopped reading: too many reads for one question.": "Lezen gestopt: te veel leesacties voor één vraag.",
+            "The assistant could not answer: {message}": "De assistent kon niet antwoorden: {message}",
+            "The pasted text is too large.": "De geplakte tekst is te groot.",
+            "The picture is too large.": "De afbeelding is te groot.",
+            "Thinking...": "Aan het denken...",
+            "This assistant takes text files only, not {name}.": "Deze assistent accepteert alleen tekstbestanden, geen {name}.",
+            "You": "U",
+            "{count} lines": "{count} regels"
+        },
+        "GabiController": {
+            "Assistant": "Assistent",
+            "Choose a context first.": "Kies eerst een context.",
+            "Close": "Sluiten",
+            "Done: {what}": "Klaar: {what}",
+            "Failed: {what}\n{message}": "Mislukt: {what}\n{message}",
+            "Forget every conversation with the assistant?": "Alle gesprekken met de assistent vergeten?",
+            "Forget the conversation with the assistant in this context?": "Het gesprek met de assistent in deze context vergeten?",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScope heeft geen van beide op deze computer gevonden. Het zijn programma's die u zelf installeert en waarin u zelf inlogt, zoals in een terminal; KubeScope vraagt om geen inloggegevens en slaat er geen op.\n\n1. Installeer de Claude Code CLI (claude) of de Codex CLI (codex) en log in.\n2. Als het is geïnstalleerd op een plek waar het systeem niet zoekt, geef die dan aan KubeScope door bij Instellingen.\n3. Open deze knop opnieuw.",
+            "Not run, the write mode is off: {what}": "Niet uitgevoerd, de schrijfmodus staat uit: {what}",
+            "Open Settings": "Instellingen openen",
+            "The path set for {names} is not a program that can be run.": "Het ingestelde pad voor {names} is geen programma dat kan worden uitgevoerd.",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "Wat u typt en bijvoegt, en wat de assistent uit het cluster leest om te antwoorden (brondocumenten en logregels), wordt verzonden naar {name}, het programma op deze computer, en vandaar naar de bijbehorende service. Geheime waarden worden verborgen en tokens en sleutels worden geredigeerd, maar andere tekst uit een log kan nog steeds worden meegestuurd. Wijzigingen in het cluster worden aan u voorgelegd voordat ze worden uitgevoerd, en alleen als de schrijfmodus aan staat.\n\nDe assistent gebruiken?",
+            "unknown effort": "inspanning onbekend",
+            "unknown model": "model onbekend",
+            "{name} guide": "{name}-gids",
+            "{name} needs Claude Code or Codex.": "{name} heeft Claude Code of Codex nodig."
+        }
+    }
+}

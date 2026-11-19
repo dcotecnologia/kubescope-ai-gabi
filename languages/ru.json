@@ -1,0 +1,56 @@
+{
+    "name": "Русский",
+    "rtl": false,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "Очистить историю",
+            "Close": "Закрыть",
+            "Open in a window of its own": "Открыть в отдельном окне",
+            "Put it back in the window": "Вернуть в окно",
+            "Settings": "Настройки"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(вложено: {names})",
+            "(read) {what}": "(чтение) {what}",
+            "App": "Приложение",
+            "Ask Gabi about the cluster or ask for an action...": "Спросите Gabi о кластере или попросите выполнить действие...",
+            "At most {count} files go with a question.": "К вопросу можно приложить не более {count} файлов.",
+            "Attach": "Вложить",
+            "Cancel": "Отмена",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "Здравствуйте, я {name} из {company}. Я хорошо знаю Kubernetes и KubeScope. Спросите меня о том, что видите на экране, попросите разобраться с проблемой или проводить вас в нужный раздел приложения.",
+            "Ignored an action: {why}": "Действие пропущено: {why}",
+            "Open {name}": "Открыть {name}",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "Режим только для чтения: ничего не изменено. Включите режим записи в разделе Настройки, чтобы разрешить {what}.",
+            "Run": "Запустить",
+            "See what is attached.": "Посмотреть вложения.",
+            "Send": "Отправить",
+            "Stop": "Остановить",
+            "Stopped reading: too many reads for one question.": "Чтение остановлено: слишком много обращений для одного вопроса.",
+            "The assistant could not answer: {message}": "Ассистент не смог ответить: {message}",
+            "The pasted text is too large.": "Вставленный текст слишком большой.",
+            "The picture is too large.": "Изображение слишком большое.",
+            "Thinking...": "Думаю...",
+            "This assistant takes text files only, not {name}.": "Этот ассистент принимает только текстовые файлы, но не {name}.",
+            "You": "Вы",
+            "{count} lines": "Строк: {count}"
+        },
+        "GabiController": {
+            "Assistant": "Ассистент",
+            "Choose a context first.": "Сначала выберите контекст.",
+            "Close": "Закрыть",
+            "Done: {what}": "Готово: {what}",
+            "Failed: {what}\n{message}": "Не удалось: {what}\n{message}",
+            "Forget every conversation with the assistant?": "Удалить все беседы с ассистентом?",
+            "Forget the conversation with the assistant in this context?": "Удалить беседу с ассистентом в этом контексте?",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScope не нашёл ни одну из них на этом компьютере. Это программы, которые вы устанавливаете и в которых входите в аккаунт самостоятельно, как в терминале; KubeScope не запрашивает учётные данные и не сохраняет их.\n\n1. Установите Claude Code CLI (claude) или Codex CLI (codex) и войдите в аккаунт.\n2. Если программа установлена там, где система её не ищет, укажите её расположение в KubeScope в разделе «Настройки».\n3. Нажмите эту кнопку ещё раз.",
+            "Not run, the write mode is off: {what}": "Не выполнено, режим записи выключен: {what}",
+            "Open Settings": "Открыть настройки",
+            "The path set for {names} is not a program that can be run.": "Путь, указанный для {names}, не является исполняемой программой.",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "То, что вы вводите и прикладываете, а также то, что ассистент читает из кластера для ответа (документы ресурсов и строки журналов), отправляется в {name} — программу на этом компьютере, а из неё в её сервис. Значения секретов скрыты, токены и ключи вырезаны, но остальной текст журнала всё же может быть отправлен. Изменения в кластере выполняются только после вашего подтверждения и только при включённом режиме записи.\n\nИспользовать ассистента?",
+            "unknown effort": "усилие неизвестно",
+            "unknown model": "модель неизвестна",
+            "{name} guide": "Руководство {name}",
+            "{name} needs Claude Code or Codex.": "Для {name} требуется Claude Code или Codex."
+        }
+    }
+}

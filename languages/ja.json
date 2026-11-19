@@ -1,0 +1,56 @@
+{
+    "name": "日本語",
+    "rtl": false,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "履歴を消去",
+            "Close": "閉じる",
+            "Open in a window of its own": "別ウィンドウで開く",
+            "Put it back in the window": "ウィンドウに戻す",
+            "Settings": "設定"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(添付: {names})",
+            "(read) {what}": "(読み取り) {what}",
+            "App": "アプリ",
+            "Ask Gabi about the cluster or ask for an action...": "クラスターについて質問したり、操作を依頼したりできます...",
+            "At most {count} files go with a question.": "1つの質問に添付できるファイルは最大{count}件です。",
+            "Attach": "添付",
+            "Cancel": "キャンセル",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "こんにちは、{company}の{name}です。Kubernetes と KubeScope に詳しいので、画面に表示されている内容についての質問、問題の調査、アプリ内の目的の場所への案内など、お気軽にご依頼ください。",
+            "Ignored an action: {why}": "操作を無視しました: {why}",
+            "Open {name}": "{name} を開く",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "読み取り専用モード: 何も変更されていません。{what}を許可するには、設定で書き込みモードをオンにしてください。",
+            "Run": "実行",
+            "See what is attached.": "添付内容を確認します。",
+            "Send": "送信",
+            "Stop": "停止",
+            "Stopped reading: too many reads for one question.": "読み取りを停止しました: 1つの質問に対する読み取りが多すぎます。",
+            "The assistant could not answer: {message}": "アシスタントが回答できませんでした: {message}",
+            "The pasted text is too large.": "貼り付けたテキストが大きすぎます。",
+            "The picture is too large.": "画像が大きすぎます。",
+            "Thinking...": "考え中...",
+            "This assistant takes text files only, not {name}.": "このアシスタントはテキストファイルのみ対応しており、{name}は使用できません。",
+            "You": "あなた",
+            "{count} lines": "{count} 行"
+        },
+        "GabiController": {
+            "Assistant": "アシスタント",
+            "Choose a context first.": "先にコンテキストを選択してください。",
+            "Close": "閉じる",
+            "Done: {what}": "完了: {what}",
+            "Failed: {what}\n{message}": "失敗: {what}\n{message}",
+            "Forget every conversation with the assistant?": "アシスタントとのすべての会話を消去しますか?",
+            "Forget the conversation with the assistant in this context?": "このコンテキストでのアシスタントとの会話を消去しますか?",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScopeは、このコンピューター上でどちらも見つけられませんでした。これらは、ターミナルで行うのと同じように、ご自身でインストールしてサインインするプログラムです。KubeScopeは認証情報を求めず、保存もしません。\n\n1. Claude Code CLI(claude)または Codex CLI(codex)をインストールして、サインインします。\n2. システムが検索しない場所にインストールした場合は、設定でKubeScopeにその場所を指定してください。\n3. このボタンをもう一度開いてください。",
+            "Not run, the write mode is off: {what}": "未実行(書き込みモードがオフです): {what}",
+            "Open Settings": "設定を開く",
+            "The path set for {names} is not a program that can be run.": "{names} に設定されたパスは、実行できるプログラムではありません。",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "入力や添付した内容、およびアシスタントが回答のためにクラスターから読み取る内容(リソースのドキュメントやログ行)は、このコンピューターのプログラムである{name}に送信され、さらにそのサービスへ送信されます。Secretの値は非表示になり、トークンやキーは伏せ字になりますが、ログのその他のテキストは送信される場合があります。クラスターへの変更は、実行前に確認が求められ、書き込みモードがオンの場合にのみ行われます。\n\nアシスタントを使用しますか?",
+            "unknown effort": "思考の深さ不明",
+            "unknown model": "モデル不明",
+            "{name} guide": "{name}ガイド",
+            "{name} needs Claude Code or Codex.": "{name} には Claude Code または Codex が必要です。"
+        }
+    }
+}

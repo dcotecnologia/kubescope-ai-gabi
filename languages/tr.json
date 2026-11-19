@@ -1,0 +1,56 @@
+{
+    "name": "Türkçe",
+    "rtl": false,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "Geçmişi temizle",
+            "Close": "Kapat",
+            "Open in a window of its own": "Ayrı bir pencerede aç",
+            "Put it back in the window": "Pencereye geri koy",
+            "Settings": "Ayarlar"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(eklendi: {names})",
+            "(read) {what}": "(okuma) {what}",
+            "App": "Uygulama",
+            "Ask Gabi about the cluster or ask for an action...": "Gabi'ye küme hakkında soru sorun veya bir eylem isteyin...",
+            "At most {count} files go with a question.": "Bir soruyla en fazla {count} dosya gönderilebilir.",
+            "Attach": "Ekle",
+            "Cancel": "İptal",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "Merhaba, ben {company} şirketinden {name}. Kubernetes ve KubeScope'u çok iyi bilirim. Ekranda gördüklerinizi bana sorabilir, bir sorunu incelememi isteyebilir veya sizi uygulamada bir yere götürmemi isteyebilirsiniz.",
+            "Ignored an action: {why}": "Bir eylem yok sayıldı: {why}",
+            "Open {name}": "{name} dosyasını aç",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "Salt okunur mod: hiçbir şey değiştirilmedi. {what} eylemine izin vermek için Ayarlar'dan yazma modunu açın.",
+            "Run": "Çalıştır",
+            "See what is attached.": "Eklenenleri gör.",
+            "Send": "Gönder",
+            "Stop": "Durdur",
+            "Stopped reading: too many reads for one question.": "Okuma durduruldu: tek bir soru için çok fazla okuma yapıldı.",
+            "The assistant could not answer: {message}": "Asistan yanıt veremedi: {message}",
+            "The pasted text is too large.": "Yapıştırılan metin çok büyük.",
+            "The picture is too large.": "Resim çok büyük.",
+            "Thinking...": "Düşünüyor...",
+            "This assistant takes text files only, not {name}.": "Bu asistan yalnızca metin dosyalarını kabul eder, {name} dosyasını değil.",
+            "You": "Siz",
+            "{count} lines": "{count} satır"
+        },
+        "GabiController": {
+            "Assistant": "Asistan",
+            "Choose a context first.": "Önce bir bağlam seçin.",
+            "Close": "Kapat",
+            "Done: {what}": "Tamamlandı: {what}",
+            "Failed: {what}\n{message}": "Başarısız: {what}\n{message}",
+            "Forget every conversation with the assistant?": "Asistanla yapılan tüm konuşmalar unutulsun mu?",
+            "Forget the conversation with the assistant in this context?": "Bu bağlamdaki asistan konuşması unutulsun mu?",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScope bunların hiçbirini bu bilgisayarda bulamadı. Bunlar, bir terminalde yaptığınız gibi kendiniz kurup oturum açtığınız programlardır; KubeScope kimlik bilgisi istemez ve saklamaz.\n\n1. Claude Code CLI'yı (claude) veya Codex CLI'yı (codex) kurun ve oturum açın.\n2. Sistemin bakmadığı bir yere kurulmuşsa, KubeScope'a nerede olduğunu Ayarlar'dan bildirin.\n3. Bu düğmeyi yeniden açın.",
+            "Not run, the write mode is off: {what}": "Çalıştırılmadı, yazma modu kapalı: {what}",
+            "Open Settings": "Ayarları aç",
+            "The path set for {names} is not a program that can be run.": "{names} için ayarlanan yol, çalıştırılabilen bir program değil.",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "Yazdıklarınız ve eklediğiniz her şey ile asistanın yanıt vermek için kümeden okuduğu veriler (kaynak belgeleri ve günlük satırları), bu bilgisayardaki program olan {name} programına ve oradan hizmetine gönderilir. Secret değerleri gizlenir, token ve anahtarlar maskelenir; ancak bir günlüğün diğer metinleri yine de gönderilebilir. Kümede yapılacak değişiklikler çalıştırılmadan önce size sorulur ve yalnızca yazma modu açıkken yapılır.\n\nAsistan kullanılsın mı?",
+            "unknown effort": "efor bilinmiyor",
+            "unknown model": "model bilinmiyor",
+            "{name} guide": "{name} kılavuzu",
+            "{name} needs Claude Code or Codex.": "{name} için Claude Code veya Codex gerekir."
+        }
+    }
+}

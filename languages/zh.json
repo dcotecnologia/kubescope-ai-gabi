@@ -1,0 +1,56 @@
+{
+    "name": "中文",
+    "rtl": false,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "清除历史",
+            "Close": "关闭",
+            "Open in a window of its own": "在新窗口中打开",
+            "Put it back in the window": "放回窗口",
+            "Settings": "设置"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "（已附加：{names}）",
+            "(read) {what}": "（读取）{what}",
+            "App": "应用",
+            "Ask Gabi about the cluster or ask for an action...": "向 Gabi 询问集群情况，或请求执行操作…",
+            "At most {count} files go with a question.": "每个问题最多可附带 {count} 个文件。",
+            "Attach": "附加",
+            "Cancel": "取消",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "您好，我是来自 {company} 的 {name}。我非常了解 Kubernetes 和 KubeScope。您可以向我询问屏幕上的内容，请我排查问题，或请我带您前往应用中的某个位置。",
+            "Ignored an action: {why}": "已忽略一项操作：{why}",
+            "Open {name}": "打开 {name}",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "只读模式：未做任何更改。请在设置中开启写入模式以允许 {what}。",
+            "Run": "运行",
+            "See what is attached.": "查看已附加的内容。",
+            "Send": "发送",
+            "Stop": "停止",
+            "Stopped reading: too many reads for one question.": "已停止读取：单个问题的读取次数过多。",
+            "The assistant could not answer: {message}": "助手无法回答：{message}",
+            "The pasted text is too large.": "粘贴的文本太大。",
+            "The picture is too large.": "图片过大。",
+            "Thinking...": "思考中...",
+            "This assistant takes text files only, not {name}.": "此助手仅接受文本文件，不支持 {name}。",
+            "You": "您",
+            "{count} lines": "{count} 行"
+        },
+        "GabiController": {
+            "Assistant": "助手",
+            "Choose a context first.": "请先选择一个上下文。",
+            "Close": "关闭",
+            "Done: {what}": "已完成：{what}",
+            "Failed: {what}\n{message}": "失败：{what}\n{message}",
+            "Forget every conversation with the assistant?": "要清除与助手的所有对话吗？",
+            "Forget the conversation with the assistant in this context?": "要清除此上下文中与助手的对话吗？",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScope 在此电脑上未找到它们。这两个程序需要您自行安装并登录，就像在终端中一样；KubeScope 不会索取任何凭据，也不会存储任何凭据。\n\n1. 安装 Claude Code CLI（claude）或 Codex CLI（codex）并登录。\n2. 如果它安装在系统找不到的位置，请在设置中告诉 KubeScope 其所在位置。\n3. 再次点击此按钮。",
+            "Not run, the write mode is off: {what}": "未执行，写入模式已关闭：{what}",
+            "Open Settings": "打开设置",
+            "The path set for {names} is not a program that can be run.": "为 {names} 设置的路径不是可运行的程序。",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "您输入和附加的内容，以及助手为回答而从集群读取的内容（资源文档和日志行），将发送给此电脑上的程序 {name}，并经由它发送至其服务。Secret 值会被隐藏，令牌和密钥会被遮蔽，但日志中的其他文本仍可能被发送。对集群的更改会在执行前征求您的同意，且仅在开启写入模式时才可进行。\n\n要使用助手吗？",
+            "unknown effort": "强度未知",
+            "unknown model": "模型未知",
+            "{name} guide": "{name} 指南",
+            "{name} needs Claude Code or Codex.": "{name} 需要 Claude Code 或 Codex。"
+        }
+    }
+}

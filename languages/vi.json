@@ -1,0 +1,56 @@
+{
+    "name": "Tiếng Việt",
+    "rtl": false,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "Xóa lịch sử",
+            "Close": "Đóng",
+            "Open in a window of its own": "Mở trong cửa sổ riêng",
+            "Put it back in the window": "Đưa trở lại cửa sổ",
+            "Settings": "Cài đặt"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(đã đính kèm: {names})",
+            "(read) {what}": "(đọc) {what}",
+            "App": "Ứng dụng",
+            "Ask Gabi about the cluster or ask for an action...": "Hỏi Gabi về cụm hoặc yêu cầu một hành động...",
+            "At most {count} files go with a question.": "Mỗi câu hỏi đính kèm tối đa {count} tệp.",
+            "Attach": "Đính kèm",
+            "Cancel": "Hủy",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "Xin chào, tôi là {name} đến từ {company}. Tôi hiểu rõ Kubernetes và KubeScope. Bạn có thể hỏi tôi về những gì đang hiển thị trên màn hình, nhờ tôi tìm hiểu một vấn đề, hoặc nhờ tôi đưa bạn đến một nơi nào đó trong ứng dụng.",
+            "Ignored an action: {why}": "Đã bỏ qua một hành động: {why}",
+            "Open {name}": "Mở {name}",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "Chế độ chỉ đọc: chưa có gì bị thay đổi. Hãy bật chế độ ghi trong Cài đặt để cho phép {what}.",
+            "Run": "Chạy",
+            "See what is attached.": "Xem nội dung đã đính kèm.",
+            "Send": "Gửi",
+            "Stop": "Dừng",
+            "Stopped reading: too many reads for one question.": "Đã dừng đọc: một câu hỏi có quá nhiều lượt đọc.",
+            "The assistant could not answer: {message}": "Trợ lý không thể trả lời: {message}",
+            "The pasted text is too large.": "Văn bản đã dán quá lớn.",
+            "The picture is too large.": "Ảnh quá lớn.",
+            "Thinking...": "Đang suy nghĩ...",
+            "This assistant takes text files only, not {name}.": "Trợ lý này chỉ nhận tệp văn bản, không nhận {name}.",
+            "You": "Bạn",
+            "{count} lines": "{count} dòng"
+        },
+        "GabiController": {
+            "Assistant": "Trợ lý",
+            "Choose a context first.": "Vui lòng chọn một context trước.",
+            "Close": "Đóng",
+            "Done: {what}": "Đã xong: {what}",
+            "Failed: {what}\n{message}": "Thất bại: {what}\n{message}",
+            "Forget every conversation with the assistant?": "Xóa mọi cuộc trò chuyện với trợ lý?",
+            "Forget the conversation with the assistant in this context?": "Xóa cuộc trò chuyện với trợ lý trong context này?",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScope không tìm thấy công cụ nào trong số đó trên máy tính này. Đây là các chương trình do bạn tự cài đặt và tự đăng nhập, giống như khi dùng terminal; KubeScope không yêu cầu thông tin xác thực và không lưu trữ bất kỳ thông tin nào.\n\n1. Cài đặt Claude Code CLI (claude) hoặc Codex CLI (codex) rồi đăng nhập.\n2. Nếu công cụ được cài ở nơi hệ thống không tìm tới, hãy chỉ cho KubeScope vị trí đó trong Cài đặt.\n3. Nhấn lại nút này.",
+            "Not run, the write mode is off: {what}": "Chưa chạy vì chế độ ghi đang tắt: {what}",
+            "Open Settings": "Mở Cài đặt",
+            "The path set for {names} is not a program that can be run.": "Đường dẫn được đặt cho {names} không phải là chương trình có thể chạy.",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "Nội dung bạn nhập và đính kèm, cùng dữ liệu trợ lý đọc từ cụm để trả lời (tài liệu tài nguyên và các dòng nhật ký), sẽ được gửi đến {name}, chương trình trên máy tính này, rồi từ đó đến dịch vụ của nó. Giá trị Secret được ẩn, token và khóa được che, nhưng phần văn bản khác của nhật ký vẫn có thể bị gửi đi. Mọi thay đổi đối với cụm sẽ được hỏi ý kiến bạn trước khi chạy, và chỉ khi bật chế độ ghi.\n\nSử dụng trợ lý?",
+            "unknown effort": "mức nỗ lực không rõ",
+            "unknown model": "mô hình không rõ",
+            "{name} guide": "Hướng dẫn {name}",
+            "{name} needs Claude Code or Codex.": "{name} cần Claude Code hoặc Codex."
+        }
+    }
+}

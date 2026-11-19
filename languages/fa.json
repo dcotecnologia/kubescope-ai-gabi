@@ -1,0 +1,56 @@
+{
+    "name": "فارسی",
+    "rtl": true,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "پاک کردن تاریخچه",
+            "Close": "بستن",
+            "Open in a window of its own": "باز کردن در پنجره‌ای جداگانه",
+            "Put it back in the window": "بازگرداندن به پنجره",
+            "Settings": "تنظیمات"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(پیوست‌شده: {names})",
+            "(read) {what}": "(خواندن) {what}",
+            "App": "برنامه",
+            "Ask Gabi about the cluster or ask for an action...": "از گابی درباره خوشه بپرسید یا یک کار بخواهید...",
+            "At most {count} files go with a question.": "هر پرسش حداکثر می‌تواند {count} پرونده همراه داشته باشد.",
+            "Attach": "پیوست",
+            "Cancel": "انصراف",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "سلام، من {name} از {company} هستم. Kubernetes و KubeScope را به خوبی می‌شناسم. هر چه روی صفحه می‌بینید از من بپرسید، از من بخواهید مشکلی را بررسی کنم، یا بخواهید شما را به جایی در برنامه ببرم.",
+            "Ignored an action: {why}": "یک کنش نادیده گرفته شد: {why}",
+            "Open {name}": "باز کردن {name}",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "حالت فقط‌خواندنی: چیزی تغییر نکرد. برای اجازه دادن به {what}، حالت نوشتن را در تنظیمات روشن کنید.",
+            "Run": "اجرا",
+            "See what is attached.": "مشاهده موارد پیوست‌شده.",
+            "Send": "ارسال",
+            "Stop": "توقف",
+            "Stopped reading: too many reads for one question.": "خواندن متوقف شد: تعداد خواندن‌ها برای یک پرسش بیش از حد بود.",
+            "The assistant could not answer: {message}": "دستیار نتوانست پاسخ دهد: {message}",
+            "The pasted text is too large.": "متن چسبانده‌شده بیش از حد بزرگ است.",
+            "The picture is too large.": "تصویر بیش از حد بزرگ است.",
+            "Thinking...": "در حال فکر کردن...",
+            "This assistant takes text files only, not {name}.": "این دستیار فقط پرونده‌های متنی می‌پذیرد، نه {name}.",
+            "You": "شما",
+            "{count} lines": "{count} خط"
+        },
+        "GabiController": {
+            "Assistant": "دستیار",
+            "Choose a context first.": "ابتدا یک زمینه (context) انتخاب کنید.",
+            "Close": "بستن",
+            "Done: {what}": "انجام شد: {what}",
+            "Failed: {what}\n{message}": "ناموفق: {what}\n{message}",
+            "Forget every conversation with the assistant?": "همه گفتگوها با دستیار فراموش شوند؟",
+            "Forget the conversation with the assistant in this context?": "گفتگو با دستیار در این زمینه (context) فراموش شود؟",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScope هیچ‌کدام از آن‌ها را روی این رایانه پیدا نکرد. این‌ها برنامه‌هایی هستند که خودتان نصب می‌کنید و مانند ترمینال، خودتان وارد حساب می‌شوید؛ KubeScope هیچ اطلاعات ورودی نمی‌خواهد و چیزی ذخیره نمی‌کند.\n\n۱. Claude Code CLI (claude) یا Codex CLI (codex) را نصب کنید و وارد حساب شوید.\n۲. اگر در مکانی نصب شده که سیستم آن را جست‌وجو نمی‌کند، مسیر آن را در تنظیمات به KubeScope بگویید.\n۳. دوباره این دکمه را باز کنید.",
+            "Not run, the write mode is off: {what}": "اجرا نشد، حالت نوشتن خاموش است: {what}",
+            "Open Settings": "باز کردن تنظیمات",
+            "The path set for {names} is not a program that can be run.": "مسیر تعیین‌شده برای {names} یک برنامه قابل اجرا نیست.",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "آنچه تایپ و پیوست می‌کنید و آنچه دستیار برای پاسخ دادن از خوشه می‌خواند (سندهای منابع و خط‌های گزارش) به {name}، برنامه این رایانه، و از آن به سرویسش فرستاده می‌شود. مقدارهای Secret پنهان و توکن‌ها و کلیدها حذف می‌شوند، اما متن‌های دیگر یک گزارش همچنان ممکن است فرستاده شوند. تغییرات خوشه پیش از اجرا از شما پرسیده می‌شوند و فقط با روشن بودن حالت نوشتن انجام می‌شوند.\n\nاز دستیار استفاده شود؟",
+            "unknown effort": "تلاش نامشخص",
+            "unknown model": "مدل نامشخص",
+            "{name} guide": "راهنمای {name}",
+            "{name} needs Claude Code or Codex.": "{name} به Claude Code یا Codex نیاز دارد."
+        }
+    }
+}

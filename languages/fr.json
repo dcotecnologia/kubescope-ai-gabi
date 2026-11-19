@@ -1,0 +1,56 @@
+{
+    "name": "Français",
+    "rtl": false,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "Effacer l’historique",
+            "Close": "Fermer",
+            "Open in a window of its own": "Ouvrir dans une fenêtre séparée",
+            "Put it back in the window": "Remettre dans la fenêtre",
+            "Settings": "Paramètres"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(joint : {names})",
+            "(read) {what}": "(lecture) {what}",
+            "App": "Application",
+            "Ask Gabi about the cluster or ask for an action...": "Posez une question à Gabi sur le cluster ou demandez une action...",
+            "At most {count} files go with a question.": "Une question accepte au plus {count} fichiers.",
+            "Attach": "Joindre",
+            "Cancel": "Annuler",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "Bonjour, je suis {name}, de {company}. Je connais bien Kubernetes et KubeScope. Interrogez-moi sur ce que vous voyez à l'écran, demandez-moi d'examiner un problème ou de vous emmener quelque part dans l'application.",
+            "Ignored an action: {why}": "Action ignorée : {why}",
+            "Open {name}": "Ouvrir {name}",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "Mode lecture seule : rien n’a été modifié. Activez le mode écriture dans Paramètres pour autoriser {what}.",
+            "Run": "Exécuter",
+            "See what is attached.": "Voir les pièces jointes.",
+            "Send": "Envoyer",
+            "Stop": "Arrêter",
+            "Stopped reading: too many reads for one question.": "Lecture interrompue : trop de lectures pour une seule question.",
+            "The assistant could not answer: {message}": "L’assistant n’a pas pu répondre : {message}",
+            "The pasted text is too large.": "Le texte collé est trop grand.",
+            "The picture is too large.": "L’image est trop volumineuse.",
+            "Thinking...": "Réflexion...",
+            "This assistant takes text files only, not {name}.": "Cet assistant accepte uniquement les fichiers texte, pas {name}.",
+            "You": "Vous",
+            "{count} lines": "{count} lignes"
+        },
+        "GabiController": {
+            "Assistant": "Assistant",
+            "Choose a context first.": "Choisissez d’abord un contexte.",
+            "Close": "Fermer",
+            "Done: {what}": "Terminé : {what}",
+            "Failed: {what}\n{message}": "Échec : {what}\n{message}",
+            "Forget every conversation with the assistant?": "Oublier toutes les conversations avec l’assistant ?",
+            "Forget the conversation with the assistant in this context?": "Oublier la conversation avec l’assistant dans ce contexte ?",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScope n'a trouvé ni l'un ni l'autre sur cet ordinateur. Ce sont des programmes que vous installez et dans lesquels vous vous connectez vous-même, comme dans un terminal ; KubeScope ne demande aucun identifiant et n'en conserve aucun.\n\n1. Installez la CLI Claude Code (claude) ou la CLI Codex (codex) et connectez-vous.\n2. S'il est installé à un endroit où le système ne cherche pas, indiquez à KubeScope où il se trouve dans Paramètres.\n3. Cliquez de nouveau sur ce bouton.",
+            "Not run, the write mode is off: {what}": "Non exécuté, le mode écriture est désactivé : {what}",
+            "Open Settings": "Ouvrir les Paramètres",
+            "The path set for {names} is not a program that can be run.": "Le chemin défini pour {names} n'est pas un programme exécutable.",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "Ce que vous saisissez et joignez, ainsi que ce que l’assistant lit dans le cluster pour répondre (documents de ressources et lignes de journaux), est envoyé à {name}, le programme de cet ordinateur, puis à son service. Les valeurs des secrets sont masquées et les jetons et clés sont expurgés, mais d’autres textes d’un journal peuvent tout de même être transmis. Les modifications du cluster vous sont demandées avant leur exécution, et uniquement lorsque le mode écriture est activé.\n\nUtiliser l’assistant ?",
+            "unknown effort": "effort inconnu",
+            "unknown model": "modèle inconnu",
+            "{name} guide": "Guide {name}",
+            "{name} needs Claude Code or Codex.": "{name} nécessite Claude Code ou Codex."
+        }
+    }
+}

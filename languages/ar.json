@@ -1,0 +1,56 @@
+{
+    "name": "العربية",
+    "rtl": true,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "مسح السجل",
+            "Close": "إغلاق",
+            "Open in a window of its own": "فتح في نافذة مستقلة",
+            "Put it back in the window": "إعادته إلى النافذة",
+            "Settings": "الإعدادات"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(المرفق: {names})",
+            "(read) {what}": "(قراءة) {what}",
+            "App": "التطبيق",
+            "Ask Gabi about the cluster or ask for an action...": "اسأل غابي عن الكتلة أو اطلب إجراءً...",
+            "At most {count} files go with a question.": "يمكن إرفاق {count} ملفات كحدٍّ أقصى مع السؤال.",
+            "Attach": "إرفاق",
+            "Cancel": "إلغاء",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "مرحبًا، أنا {name} من {company}. أعرف Kubernetes وKubeScope جيدًا. اسألني عمّا تراه على الشاشة، أو اطلب مني البحث في مشكلة، أو اطلب مني أن آخذك إلى مكان ما في التطبيق.",
+            "Ignored an action: {why}": "تم تجاهل إجراء: {why}",
+            "Open {name}": "فتح {name}",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "وضع القراءة فقط: لم يتم تغيير أي شيء. فعّل وضع الكتابة في الإعدادات للسماح بـ {what}.",
+            "Run": "تشغيل",
+            "See what is attached.": "عرض المرفقات.",
+            "Send": "إرسال",
+            "Stop": "إيقاف",
+            "Stopped reading: too many reads for one question.": "توقفت القراءة: عدد عمليات القراءة كبير جدًا لسؤال واحد.",
+            "The assistant could not answer: {message}": "تعذّر على المساعد الإجابة: {message}",
+            "The pasted text is too large.": "النص الملصق كبير جدًا.",
+            "The picture is too large.": "الصورة كبيرة جدًا.",
+            "Thinking...": "جارٍ التفكير...",
+            "This assistant takes text files only, not {name}.": "يقبل هذا المساعد الملفات النصية فقط، وليس {name}.",
+            "You": "أنت",
+            "{count} lines": "{count} أسطر"
+        },
+        "GabiController": {
+            "Assistant": "المساعد",
+            "Choose a context first.": "اختر سياقًا أولًا.",
+            "Close": "إغلاق",
+            "Done: {what}": "تم: {what}",
+            "Failed: {what}\n{message}": "فشل: {what}\n{message}",
+            "Forget every conversation with the assistant?": "هل تريد نسيان كل المحادثات مع المساعد؟",
+            "Forget the conversation with the assistant in this context?": "هل تريد نسيان المحادثة مع المساعد في هذا السياق؟",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "لم يعثر KubeScope على أيٍّ منهما على هذا الحاسوب. هما برنامجان تثبّتهما وتسجّل الدخول إليهما بنفسك، كما تفعل في الطرفية؛ لا يطلب KubeScope أي بيانات اعتماد ولا يحفظ أيًّا منها.\n\n1. ثبّت واجهة Claude Code CLI ‏(claude) أو واجهة Codex CLI ‏(codex) وسجّل الدخول.\n2. إذا كان مثبّتًا في مكان لا يبحث فيه النظام، فأخبر KubeScope بمكانه في الإعدادات.\n3. افتح هذا الزر مرة أخرى.",
+            "Not run, the write mode is off: {what}": "لم يتم التنفيذ، وضع الكتابة متوقف: {what}",
+            "Open Settings": "فتح الإعدادات",
+            "The path set for {names} is not a program that can be run.": "المسار المحدد لـ {names} ليس برنامجًا قابلًا للتشغيل.",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "ما تكتبه وترفقه، وما يقرأه المساعد من الكتلة للإجابة (مستندات الموارد وأسطر السجلات)، يُرسل إلى {name}، وهو برنامج على هذا الكمبيوتر، ومنه إلى خدمته. تُخفى القيم السرية ويتم حجب الرموز والمفاتيح، لكن قد يُرسل نص آخر من السجل. يُطلب إذنك قبل تنفيذ أي تغييرات على الكتلة، ولا يتم ذلك إلا عند تفعيل وضع الكتابة.\n\nهل تريد استخدام المساعد؟",
+            "unknown effort": "جهد غير معروف",
+            "unknown model": "نموذج غير معروف",
+            "{name} guide": "دليل {name}",
+            "{name} needs Claude Code or Codex.": "يحتاج {name} إلى Claude Code أو Codex."
+        }
+    }
+}

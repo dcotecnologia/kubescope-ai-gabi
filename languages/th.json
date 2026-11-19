@@ -1,0 +1,56 @@
+{
+    "name": "ไทย",
+    "rtl": false,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "ล้างประวัติ",
+            "Close": "ปิด",
+            "Open in a window of its own": "เปิดในหน้าต่างแยก",
+            "Put it back in the window": "นำกลับเข้าไปในหน้าต่าง",
+            "Settings": "การตั้งค่า"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(แนบแล้ว: {names})",
+            "(read) {what}": "(อ่าน) {what}",
+            "App": "แอป",
+            "Ask Gabi about the cluster or ask for an action...": "ถามกาบีเกี่ยวกับคลัสเตอร์ หรือขอให้ดำเนินการ...",
+            "At most {count} files go with a question.": "แนบไฟล์ได้สูงสุด {count} ไฟล์ต่อหนึ่งคำถาม",
+            "Attach": "แนบ",
+            "Cancel": "ยกเลิก",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "สวัสดีค่ะ ฉันคือ {name} จาก {company} ฉันเชี่ยวชาญ Kubernetes และ KubeScope ถามฉันได้เลยเกี่ยวกับสิ่งที่คุณเห็นบนหน้าจอ ให้ฉันช่วยตรวจสอบปัญหา หรือให้ฉันพาไปยังส่วนต่าง ๆ ในแอปค่ะ",
+            "Ignored an action: {why}": "ข้ามการกระทำหนึ่งรายการ: {why}",
+            "Open {name}": "เปิด {name}",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "โหมดอ่านอย่างเดียว: ไม่มีการเปลี่ยนแปลงใด ๆ เปิดโหมดเขียนในการตั้งค่าเพื่ออนุญาต {what}",
+            "Run": "เรียกใช้",
+            "See what is attached.": "ดูสิ่งที่แนบไว้",
+            "Send": "ส่ง",
+            "Stop": "หยุด",
+            "Stopped reading: too many reads for one question.": "หยุดอ่านแล้ว: อ่านมากเกินไปสำหรับหนึ่งคำถาม",
+            "The assistant could not answer: {message}": "ผู้ช่วยไม่สามารถตอบได้: {message}",
+            "The pasted text is too large.": "ข้อความที่วางใหญ่เกินไป",
+            "The picture is too large.": "รูปภาพมีขนาดใหญ่เกินไป",
+            "Thinking...": "กำลังคิด...",
+            "This assistant takes text files only, not {name}.": "ผู้ช่วยนี้รับเฉพาะไฟล์ข้อความ ไม่รับ {name}",
+            "You": "คุณ",
+            "{count} lines": "{count} บรรทัด"
+        },
+        "GabiController": {
+            "Assistant": "ผู้ช่วย",
+            "Choose a context first.": "โปรดเลือกคอนเท็กซ์ก่อน",
+            "Close": "ปิด",
+            "Done: {what}": "เสร็จแล้ว: {what}",
+            "Failed: {what}\n{message}": "ไม่สำเร็จ: {what}\n{message}",
+            "Forget every conversation with the assistant?": "ลืมการสนทนาทั้งหมดกับผู้ช่วยหรือไม่",
+            "Forget the conversation with the assistant in this context?": "ลืมการสนทนากับผู้ช่วยในคอนเท็กซ์นี้หรือไม่",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScope ไม่พบโปรแกรมทั้งสองนี้บนคอมพิวเตอร์เครื่องนี้ ทั้งสองเป็นโปรแกรมที่คุณต้องติดตั้งและลงชื่อเข้าใช้ด้วยตนเอง เช่นเดียวกับที่ทำในเทอร์มินัล KubeScope ไม่ขอข้อมูลรับรองใดๆ และไม่จัดเก็บไว้\n\n1. ติดตั้ง Claude Code CLI (claude) หรือ Codex CLI (codex) แล้วลงชื่อเข้าใช้\n2. หากติดตั้งไว้ในตำแหน่งที่ระบบมองไม่เห็น ให้ระบุตำแหน่งให้ KubeScope ในการตั้งค่า\n3. กดปุ่มนี้อีกครั้ง",
+            "Not run, the write mode is off: {what}": "ไม่ได้เรียกใช้ เนื่องจากโหมดเขียนปิดอยู่: {what}",
+            "Open Settings": "เปิดการตั้งค่า",
+            "The path set for {names} is not a program that can be run.": "พาธที่ตั้งไว้สำหรับ {names} ไม่ใช่โปรแกรมที่เรียกใช้งานได้",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "สิ่งที่คุณพิมพ์และแนบ รวมถึงสิ่งที่ผู้ช่วยอ่านจากคลัสเตอร์เพื่อตอบ (เอกสารทรัพยากรและบรรทัดบันทึก) จะถูกส่งไปยัง {name} ซึ่งเป็นโปรแกรมในคอมพิวเตอร์เครื่องนี้ และส่งต่อไปยังบริการของโปรแกรม ค่า Secret จะถูกซ่อน และโทเค็นกับคีย์จะถูกปกปิด แต่ข้อความอื่นในบันทึกอาจยังถูกส่งไปได้ การเปลี่ยนแปลงคลัสเตอร์จะถามคุณก่อนเรียกใช้ และทำได้เฉพาะเมื่อเปิดโหมดเขียนเท่านั้น\n\nใช้ผู้ช่วยหรือไม่",
+            "unknown effort": "ไม่ทราบระดับความพยายาม",
+            "unknown model": "ไม่ทราบโมเดล",
+            "{name} guide": "คู่มือ {name}",
+            "{name} needs Claude Code or Codex.": "{name} ต้องใช้ Claude Code หรือ Codex"
+        }
+    }
+}

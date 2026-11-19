@@ -1,0 +1,56 @@
+{
+    "name": "हिन्दी",
+    "rtl": false,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "इतिहास साफ़ करें",
+            "Close": "बंद करें",
+            "Open in a window of its own": "अलग विंडो में खोलें",
+            "Put it back in the window": "इसे वापस विंडो में रखें",
+            "Settings": "सेटिंग्स"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(संलग्न: {names})",
+            "(read) {what}": "(पढ़ा) {what}",
+            "App": "ऐप",
+            "Ask Gabi about the cluster or ask for an action...": "क्लस्टर के बारे में गैबी से पूछें या कोई क्रिया करने को कहें...",
+            "At most {count} files go with a question.": "एक प्रश्न के साथ अधिकतम {count} फ़ाइलें जा सकती हैं।",
+            "Attach": "संलग्न करें",
+            "Cancel": "रद्द करें",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "नमस्ते, मैं {company} की {name} हूँ। मुझे Kubernetes और KubeScope की अच्छी जानकारी है। स्क्रीन पर जो दिख रहा है, उसके बारे में मुझसे पूछें, किसी समस्या की जाँच करने को कहें, या ऐप में किसी जगह ले जाने को कहें।",
+            "Ignored an action: {why}": "एक क्रिया अनदेखी की गई: {why}",
+            "Open {name}": "{name} खोलें",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "केवल-पढ़ने का मोड: कुछ भी नहीं बदला गया। {what} की अनुमति देने के लिए सेटिंग्स में राइट मोड चालू करें।",
+            "Run": "चलाएँ",
+            "See what is attached.": "देखें क्या संलग्न है।",
+            "Send": "भेजें",
+            "Stop": "रोकें",
+            "Stopped reading: too many reads for one question.": "पढ़ना रोका गया: एक प्रश्न के लिए बहुत अधिक रीड हुए।",
+            "The assistant could not answer: {message}": "असिस्टेंट उत्तर नहीं दे सका: {message}",
+            "The pasted text is too large.": "चिपकाया गया पाठ बहुत बड़ा है।",
+            "The picture is too large.": "चित्र बहुत बड़ा है।",
+            "Thinking...": "सोच रहा है...",
+            "This assistant takes text files only, not {name}.": "यह असिस्टेंट केवल टेक्स्ट फ़ाइलें लेता है, {name} नहीं।",
+            "You": "आप",
+            "{count} lines": "{count} पंक्तियाँ"
+        },
+        "GabiController": {
+            "Assistant": "असिस्टेंट",
+            "Choose a context first.": "पहले कोई कॉन्टेक्स्ट चुनें।",
+            "Close": "बंद करें",
+            "Done: {what}": "हो गया: {what}",
+            "Failed: {what}\n{message}": "विफल: {what}\n{message}",
+            "Forget every conversation with the assistant?": "असिस्टेंट के साथ की सभी बातचीत भूल जाएँ?",
+            "Forget the conversation with the assistant in this context?": "इस कॉन्टेक्स्ट में असिस्टेंट के साथ की बातचीत भूल जाएँ?",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScope को इस कंप्यूटर पर इनमें से कोई भी नहीं मिला। ये ऐसे प्रोग्राम हैं जिन्हें आप स्वयं इंस्टॉल करते हैं और जिनमें स्वयं साइन इन करते हैं, जैसे आप टर्मिनल में करते हैं; KubeScope कोई क्रेडेंशियल नहीं माँगता और न ही कोई सहेजता है।\n\n1. Claude Code CLI (claude) या Codex CLI (codex) इंस्टॉल करें और साइन इन करें।\n2. यदि यह ऐसी जगह इंस्टॉल है जहाँ सिस्टम नहीं देखता, तो सेटिंग्स में KubeScope को उसका स्थान बताएँ।\n3. इस बटन को फिर से खोलें।",
+            "Not run, the write mode is off: {what}": "चलाया नहीं गया, राइट मोड बंद है: {what}",
+            "Open Settings": "सेटिंग्स खोलें",
+            "The path set for {names} is not a program that can be run.": "{names} के लिए सेट किया गया पाथ ऐसा प्रोग्राम नहीं है जिसे चलाया जा सके।",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "आप जो टाइप और संलग्न करते हैं, और उत्तर देने के लिए असिस्टेंट क्लस्टर से जो पढ़ता है (रिसोर्स दस्तावेज़ और लॉग की पंक्तियाँ), वह {name} को, यानी इस कंप्यूटर के प्रोग्राम को, और उससे उसकी सेवा को भेजा जाता है। गोपनीय मान छिपाए जाते हैं और टोकन व कुंजियाँ हटा दी जाती हैं, लेकिन लॉग का अन्य टेक्स्ट फिर भी जा सकता है। क्लस्टर में बदलाव चलने से पहले आपसे पूछे जाते हैं, और केवल राइट मोड चालू होने पर ही।\n\nक्या असिस्टेंट का उपयोग करें?",
+            "unknown effort": "प्रयास अज्ञात",
+            "unknown model": "मॉडल अज्ञात",
+            "{name} guide": "{name} गाइड",
+            "{name} needs Claude Code or Codex.": "{name} के लिए Claude Code या Codex आवश्यक है।"
+        }
+    }
+}

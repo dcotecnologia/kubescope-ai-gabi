@@ -1,0 +1,56 @@
+{
+    "name": "עברית",
+    "rtl": true,
+    "strings": {
+        "AssistantPanel": {
+            "Clear history": "נקה היסטוריה",
+            "Close": "סגור",
+            "Open in a window of its own": "פתח בחלון נפרד",
+            "Put it back in the window": "החזר לחלון",
+            "Settings": "הגדרות"
+        },
+        "AssistantTab": {
+            "(attached: {names})": "(מצורף: {names})",
+            "(read) {what}": "(קריאה) {what}",
+            "App": "אפליקציה",
+            "Ask Gabi about the cluster or ask for an action...": "שאל את Gabi על האשכול או בקש פעולה...",
+            "At most {count} files go with a question.": "ניתן לצרף עד {count} קבצים לשאלה.",
+            "Attach": "צרף",
+            "Cancel": "ביטול",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope well. Ask me about what you see on the screen, ask me to look into a problem, or ask me to take you somewhere in the app.": "היי, אני {name} מ-{company}. אני מכיר היטב את Kubernetes ואת KubeScope. אפשר לשאול אותי על מה שמוצג במסך, לבקש ממני לבדוק בעיה, או לבקש שאוביל אותך למקום מסוים באפליקציה.",
+            "Ignored an action: {why}": "פעולה התעלמה: {why}",
+            "Open {name}": "פתיחת {name}",
+            "Read-only mode: nothing was changed. Turn on the write mode in Settings to allow {what}.": "מצב קריאה בלבד: דבר לא שונה. הפעילו את מצב הכתיבה בהגדרות כדי לאפשר {what}.",
+            "Run": "הפעל",
+            "See what is attached.": "הצגת הקבצים המצורפים.",
+            "Send": "שלח",
+            "Stop": "עצור",
+            "Stopped reading: too many reads for one question.": "הקריאה הופסקה: יותר מדי קריאות לשאלה אחת.",
+            "The assistant could not answer: {message}": "העוזר לא הצליח לענות: {message}",
+            "The pasted text is too large.": "הטקסט שהודבק גדול מדי.",
+            "The picture is too large.": "התמונה גדולה מדי.",
+            "Thinking...": "חושב...",
+            "This assistant takes text files only, not {name}.": "עוזר זה מקבל קובצי טקסט בלבד, לא {name}.",
+            "You": "אתם",
+            "{count} lines": "{count} שורות"
+        },
+        "GabiController": {
+            "Assistant": "עוזר",
+            "Choose a context first.": "יש לבחור הקשר תחילה.",
+            "Close": "סגור",
+            "Done: {what}": "בוצע: {what}",
+            "Failed: {what}\n{message}": "נכשל: {what}\n{message}",
+            "Forget every conversation with the assistant?": "למחוק כל שיחה עם העוזר?",
+            "Forget the conversation with the assistant in this context?": "למחוק את השיחה עם העוזר בהקשר זה?",
+            "KubeScope found neither of them on this computer. They are programs that you install and sign in to yourself, as you would in a terminal; KubeScope asks for no credentials and stores none.\n\n1. Install the Claude Code CLI (claude) or the Codex CLI (codex) and sign in.\n2. If it is installed where the system does not look, tell KubeScope where in Settings.\n3. Open this button again.": "KubeScope לא מצא אף אחד מהם במחשב זה. אלה תוכנות שמתקינים ומתחברים אליהן בעצמכם, כמו בטרמינל; KubeScope לא מבקש פרטי כניסה ואינו שומר אותם.\n\n1. התקינו את Claude Code CLI (claude) או את Codex CLI (codex) והתחברו.\n2. אם התוכנה מותקנת במקום שהמערכת אינה מחפשת בו, ציינו ל-KubeScope את המיקום ב״הגדרות״.\n3. לחצו על הכפתור הזה שוב.",
+            "Not run, the write mode is off: {what}": "לא הופעל, מצב הכתיבה כבוי: {what}",
+            "Open Settings": "פתיחת הגדרות",
+            "The path set for {names} is not a program that can be run.": "הנתיב שהוגדר עבור {names} אינו תוכנה שאפשר להריץ.",
+            "What you type and attach, and what the assistant reads from the cluster to answer (resource documents and log lines), are sent to {name}, the program of this computer, and from it to its service. Secret values are hidden and tokens and keys are redacted, but other text of a log can still go. Changes to the cluster are asked of you before they run, and only with the write mode on.\n\nUse the assistant?": "מה שאתם מקלידים ומצרפים, ומה שהעוזר קורא מהאשכול כדי לענות (מסמכי משאבים ושורות יומן), נשלח אל {name}, התוכנה במחשב זה, ומשם אל השירות שלה. ערכי סוד מוסתרים ואסימונים ומפתחות מצונזרים, אך טקסט אחר ביומן עדיין עלול להישלח. שינויים באשכול מחייבים את אישורכם לפני הביצוע, ורק כשמצב הכתיבה פעיל.\n\nלהשתמש בעוזר?",
+            "unknown effort": "מאמץ לא ידוע",
+            "unknown model": "מודל לא ידוע",
+            "{name} guide": "מדריך {name}",
+            "{name} needs Claude Code or Codex.": "{name} דורש את Claude Code או את Codex."
+        }
+    }
+}
