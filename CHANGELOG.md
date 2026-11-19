@@ -8,6 +8,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- The tests check the coverage, which stays at 100% as in KubeScope, and the pipeline publishes the badge
 - A pipeline that lints, type-checks and tests on every pull request, and a release pipeline for the tags `v*`
 - A professional README, a Makefile, and the contributing and security guides
 

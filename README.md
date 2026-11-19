@@ -1,5 +1,7 @@
 # KubeScope Gabi · AI assistant
 
+[![CI](https://github.com/dcotecnologia/kubescope-ai-gabi/actions/workflows/ci.yml/badge.svg)](https://github.com/dcotecnologia/kubescope-ai-gabi/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fdcotecnologia%2Fkubescope-ai-gabi%2Fbadges%2Fcoverage.json)](https://github.com/dcotecnologia/kubescope-ai-gabi/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.15](https://img.shields.io/badge/python-3.15-blue.svg)
 ![Extension API 0](https://img.shields.io/badge/extension%20API-0-orange.svg)
