@@ -9,12 +9,11 @@ comes through the `GabiPort`, never from the window itself.
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
-from kubescope.extensions.registries import CommandRegistry
-from kubescope.i18n import language_name, resolve_language
+from kubescope.sdk import App
 from kubescope.sdk.errors import first_line
-from kubescope.sdk.paths import config_directory
-from kubescope.settings import Settings
 from PySide6.QtCore import QObject, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import QMessageBox, QWidget
@@ -31,25 +30,27 @@ from kubescope.gabi.runner import (
     is_available as is_available_assistant,
 )
 from kubescope.gabi.session import ChatSession
+from kubescope.gabi.settings import GabiSettings
 from kubescope.gabi.tab import AssistantTab
 
 
 @dataclass
 class GabiPort:
-    """What the app lends to Gabi; every call is looked up when it is made."""
+    """What the extension lends to Gabi; every call is looked up when it is made."""
 
-    settings: Settings
+    settings: GabiSettings  # her own preferences
+    app: App  # the write mode and the language of the app
     parent: QWidget  # the window: the parent of the boxes it shows
     central: QWidget  # where the panel and the button of the corner sit
-    commands: CommandRegistry
+    invoke: Callable[..., Any]  # a command of the window, by name
     context: Callable[[], str]  # the cluster context the window is on
     screen: Callable[[], str]  # what the window shows, in words
-    save_settings: Callable[[], None]
     show_message: Callable[[QMessageBox.Icon, str, str], None]
     run_action: Callable[..., None]  # a function off the UI thread
     style_box: Callable[[QMessageBox], None]  # the window's own buttons
     show_settings: Callable[[], None]  # the Settings, on the section of Gabi
     reserve_corner: Callable[[int], None]  # keep this many pixels of the corner clear
+    history_path: Path  # where the conversations are kept
 
 
 class GabiController(QObject):
@@ -59,7 +60,7 @@ class GabiController(QObject):
         runner.CUSTOM_PROGRAMS.clear()
         runner.CUSTOM_PROGRAMS.update(port.settings.assistant_programs)
         self.sync_choices()
-        self.history = History(config_directory() / "assistant_history.json")
+        self.history = History(port.history_path)
         self.tab: AssistantTab | None = None
         self._switching = False  # the assistant itself changes the context
         self.dock = AssistantDock(port.central)
@@ -133,6 +134,13 @@ class GabiController(QObject):
             self.end_chat()
             self.dock.close()
 
+    def close(self) -> None:
+        """The extension was unloaded: stop what the chat runs and take Gabi out
+        of the window."""
+        self.end_chat()
+        self.dock.dispose()
+        self.port.reserve_corner(0)
+
     def shutdown(self) -> None:
         """Stop what the chat runs."""
         if self.tab is not None:
@@ -168,7 +176,6 @@ class GabiController(QObject):
         if answer != QMessageBox.StandardButton.Yes:
             return False
         self.port.settings.assistant_consent = True
-        self.port.save_settings()
         return True
 
     def shortcut(self) -> None:
@@ -219,7 +226,7 @@ class GabiController(QObject):
             tab = AssistantTab(
                 session,
                 self.port.context(),
-                lambda: self.port.settings.write_mode,
+                lambda: self.port.app.write_mode,
                 screen=self.port.screen,
                 history=self.history.entries(self.port.context()),
                 takes_images=assistant.takes_images,
@@ -303,8 +310,8 @@ class GabiController(QObject):
             f"Models it lists: {models}",
             f"Efforts it allows: {efforts}",
             f"Takes images: {'yes' if assistant.takes_images else 'no'}",
-            f"Write mode: {'on' if settings.write_mode else 'off'}",
-            f"Language: {resolve_language(settings.language)}",
+            f"Write mode: {'on' if self.port.app.write_mode else 'off'}",
+            f"Language: {self.port.app.resolved_language}",
             f"Command: {' '.join(shown)}",
         ]
         return "\n".join(lines)
@@ -334,9 +341,7 @@ class GabiController(QObject):
         """What the assistant is told: the language of the app and the mode it
         is in, since with the write mode off it has nothing that changes a
         cluster."""
-        return system_prompt(
-            language_name(self.port.settings.language), self.port.settings.write_mode
-        )
+        return system_prompt(self.port.app.language_name, self.port.app.write_mode)
 
     def refresh_system(self) -> None:
         """Tell the open chat about a change of language or of mode."""
@@ -362,7 +367,6 @@ class GabiController(QObject):
     def _keep_panel(self) -> None:
         """Write down the size and the place of the chat panel."""
         self.port.settings.assistant_panel = self.dock.state()
-        self.port.save_settings()
 
     def _keep_chat(self, tab: AssistantTab) -> None:
         """Write the conversation down, to find it again."""
@@ -426,7 +430,7 @@ class GabiController(QObject):
         settings = box.addButton(
             self.tr("Open Settings"), QMessageBox.ButtonRole.AcceptRole
         )
-        language = resolve_language(self.port.settings.language)
+        language = self.port.app.resolved_language
         for one in ASSISTANTS.values():
             if one.guide is not None:
                 address = one.guide(language)
@@ -448,11 +452,11 @@ class GabiController(QObject):
         """Do in the window what the assistant asked, as the person would."""
         name = request.action.name
         if name != "switch_context":
-            self.port.commands.invoke(name, report=tab.note, **request.args)
+            self.port.invoke(name, report=tab.note, **request.args)
             return
         self._switching = True
         try:
-            if self.port.commands.invoke(name, report=tab.note, **request.args):
+            if self.port.invoke(name, report=tab.note, **request.args):
                 tab.context = self.port.context()  # the chat follows
         finally:
             self._switching = False
@@ -460,7 +464,7 @@ class GabiController(QObject):
     def _write(self, tab: AssistantTab, request: assistant_actions.Request) -> None:
         """Run a change the person confirmed on a card of the chat."""
         what = assistant_actions.describe(request)
-        if not self.port.settings.write_mode:
+        if not self.port.app.write_mode:
             tab.note(
                 self.tr("Not run, the write mode is off: {what}").format(what=what)
             )

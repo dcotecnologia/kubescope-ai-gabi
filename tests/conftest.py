@@ -113,3 +113,55 @@ def app():
     services.install(lent)  # type: ignore[arg-type]
     yield lent
     services.install(None)
+
+
+class _FakeRefreshWorker:
+    """Stands in for the worker that reads a cluster: it answers nothing, at once."""
+
+    def __init__(self, *_args, **_kwargs) -> None:
+        from PySide6.QtCore import QObject, Signal
+
+        class Signals(QObject):
+            completed = Signal(list, list)
+            failed = Signal(str)
+            finished = Signal()
+
+        self._signals = Signals()
+        self.completed = self._signals.completed
+        self.failed = self._signals.failed
+        self.finished = self._signals.finished
+        self.key = None
+
+    def isRunning(self) -> bool:
+        return False
+
+    def start(self) -> None:
+        self.finished.emit()
+
+
+@pytest.fixture
+def window(monkeypatch):
+    """The window of the app, with a "prod" context and no cluster behind it."""
+    import time
+
+    from PySide6.QtWidgets import QApplication
+
+    from kubescope import window as window_module
+
+    application = QApplication.instance() or QApplication([])
+    monkeypatch.setattr(window_module, "list_contexts", lambda: ([], None))
+    monkeypatch.setattr(
+        window_module.WorkloadWindow, "refresh_overview", lambda *_a: None
+    )
+    monkeypatch.setattr(window_module, "RefreshWorker", _FakeRefreshWorker)
+    shown = window_module.WorkloadWindow()
+    deadline = time.monotonic() + 3
+    while shown._action_workers and time.monotonic() < deadline:
+        application.processEvents()
+        time.sleep(0.005)
+    shown.context_combo.blockSignals(True)
+    shown.context_combo.addItem("prod")
+    shown.context_combo.setCurrentIndex(0)
+    shown.context_combo.blockSignals(False)
+    yield shown
+    shown.close()

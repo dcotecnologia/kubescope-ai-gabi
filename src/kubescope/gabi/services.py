@@ -6,9 +6,12 @@ never reaches into the app. Before she is activated (or without a window, in the
 terminal) the colors are what they are written as.
 """
 
+from typing import Any
+
 from kubescope.sdk import ClusterAccess, Context, Writes
 
 _context: Context | None = None
+controller: Any = None  # the chat in the window, while there is one
 
 
 def install(ctx: Context | None) -> None:

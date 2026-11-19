@@ -402,6 +402,22 @@ class AssistantDock(QObject):
             target = self.panel.pos()
             self._slide_to(target + QPoint(0, SLIDE), target, (0.0, 1.0))
 
+    def dispose(self) -> None:
+        """Take the button and the panel out of the window for good, with the
+        window of their own if the panel was taken out."""
+        self.host.removeEventFilter(self)
+        self._open = False
+        self._save.stop()
+        if self._frame is not None:
+            self._frame.hide()
+            self._frame.deleteLater()
+            self._frame = None
+        self.bubble.hide()
+        self.bubble.deleteLater()
+        self.panel.hide()
+        self.panel.deleteLater()
+        self.deleteLater()
+
     def close(self) -> None:
         was_open, self._open = self._open, False
         if self._floating:
