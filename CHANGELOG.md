@@ -1,22 +1,8 @@
 # Changelog
 
-All notable changes to this project are documented here. The format follows
-[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project follows
-[Semantic Versioning](https://semver.org/).
+All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
-### Added
-
-- The tests check the coverage, which stays at 100% as in KubeScope, and the pipeline publishes the badge
-- A pipeline that lints, type-checks and tests on every pull request, and a release pipeline for the tags `v*`
-- A professional README, a Makefile, and the contributing and security guides
-
-## [1.0.1] - 2026-11-19
-
-### Fixed
-
-- The card in **Settings → Extensions** did not say what she can do: the manifest now describes it
 
 ## [1.0.0] - 2026-11-19
 
@@ -24,6 +10,5 @@ All notable changes to this project are documented here. The format follows
 
 - Gabi as an extension of her own project, written against the KubeScope SDK only: the chat in the corner of the window, her section of the Settings, her shortcut and the terminal commands `chat` and `assistant`
 
-[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.0.1...HEAD
-[1.0.1]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.0.0...v1.0.1
+[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/releases/tag/v1.0.0

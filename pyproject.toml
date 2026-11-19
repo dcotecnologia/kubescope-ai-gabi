@@ -1,6 +1,6 @@
 [project]
 name = "kubescope-gabi"
-version = "1.0.1"
+version = "1.0.0"
 description = "Gabi, the assistant of KubeScope: ask about your cluster from a coding assistant installed on your computer"
 readme = "README.md"
 license = "MIT"
@@ -9,7 +9,9 @@ requires-python = ">=3.15,<3.16"
 # She is written against the SDK and nothing else of KubeScope (a test keeps it
 # so): the app gives her what she needs when it runs her. Qt is what her chat is
 # drawn with.
-dependencies = ["kubescope-sdk>=0.1.0", "pyside6>=6.12.0"]
+dependencies = [
+    "kubescope-sdk>=1.0.0,<2.0.0",
+]
 
 [build-system]
 requires = ["setuptools>=75"]
@@ -24,7 +26,7 @@ dev = [
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "pyright>=1.1.414",
-    "ruff>=0.17.5",
+    "ruff>=0.17.6",
 ]
 
 [tool.uv.sources]

@@ -1,6 +1,6 @@
 id = "kubescope.gabi"
 name = "Gabi - AI Assistant"
-version = "1.0.1"
+version = "1.0.0"
 api = "0"
 entry = "kubescope.gabi:activate"
 description = "Ask about your cluster in plain language: she reads workloads, events, logs and live CPU and memory, explains what is wrong and how to fix it, and takes you to the right list or tab. Changes (scale, edit) only in write mode, each one confirmed. Uses the coding assistant you already signed in to."
