@@ -22,6 +22,7 @@ from PySide6.QtWidgets import QMessageBox
 from kubescope.gabi import cli, services
 from kubescope.gabi.controller import GabiController, GabiPort
 from kubescope.gabi.settings import GabiSettings
+from kubescope.gabi.settings_panel import GabiSettingsPanel
 
 TITLE = "Gabi"  # the section of the Settings, and its button
 SHORTCUT = "kubescope.gabi.ask"
@@ -89,6 +90,15 @@ def _in_the_window(ctx: Context, settings: GabiSettings) -> None:
         "Ctrl+G",
         lambda: controller.shortcut(),
         application=True,
+    )
+    ctx.add_settings_section(
+        TITLE,
+        lambda: GabiSettingsPanel(
+            settings,
+            lambda *chosen: controller.apply_settings(*chosen),
+            lambda text: ui.show_message("warning", TITLE, text),
+            lambda: controller.clear_history(),
+        ),
     )
     ctx.on_unload(lambda: controller.close())
     ctx.on_unload(lambda: setattr(services, "controller", None))

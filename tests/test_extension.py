@@ -235,3 +235,85 @@ def test_what_she_asks_of_the_window_goes_by_the_commands_of_the_window(
     services.controller.port.invoke("refresh", report=lambda message: None)
 
     assert called == ["refresh"]
+
+
+def sections(window) -> list:
+    return [
+        one for one in window._extension_sections if one.extension == "kubescope.gabi"
+    ]
+
+
+def test_her_section_is_in_the_settings_of_the_window(window, ctx) -> None:
+    window._apply_extension_contributions()
+    [entry] = sections(window)
+    form = window.settings_ui
+
+    assert entry.title == "Gabi" and entry.button.text() == "Gabi"
+    assert not entry.card.isVisibleTo(form.settingsContent)
+    entry.button.click()
+    assert entry.card.isVisibleTo(form.settingsContent)
+    assert entry.panel.enabled.isChecked()
+
+
+def test_her_shortcut_is_in_the_shortcuts_of_the_settings(window, ctx) -> None:
+    window._apply_extension_contributions()
+    table = window.settings_ui.shortcutsTable
+    rows = {
+        table.item(row, 0).text(): row
+        for row in range(table.rowCount())
+        if table.item(row, 0) is not None
+    }
+
+    assert "Ask the assistant" in rows
+    shortcut = window._shortcuts["kubescope.gabi.ask"]
+    assert shortcut.key().toString() == "Ctrl+G"
+
+
+def test_saving_the_settings_saves_her_section_and_the_chat_follows(
+    window, ctx
+) -> None:
+    window._apply_extension_contributions()
+    [entry] = sections(window)
+    window._show_page(2)
+    entry.panel.enabled.setChecked(False)
+
+    window._save_preferences()
+
+    assert window.settings.extension_data("kubescope.gabi")["enabled"] is False
+    assert services.controller.dock.bubble.isHidden()
+    entry.panel.enabled.setChecked(True)
+    window._save_preferences()
+    assert window.settings.extension_data("kubescope.gabi")["enabled"] is True
+
+
+def test_a_path_that_is_not_a_program_stops_the_settings_from_saving(
+    window, ctx, monkeypatch
+) -> None:
+    window._apply_extension_contributions()
+    [entry] = sections(window)
+    window._show_page(2)
+    shown: list = []
+    monkeypatch.setattr(
+        window, "_show_message", lambda icon, title, text: shown.append((title, text))
+    )
+    entry.panel._paths["claude"].setText("/nowhere/claude")
+    before = window.settings.remember_last_context
+    window.settings_ui.rememberCheck.setChecked(not before)
+
+    window._save_preferences()
+
+    assert shown and "is not a program that can be run" in shown[0][1]
+    assert window.settings.remember_last_context is before  # nothing was saved
+
+
+def test_the_button_of_the_section_forgets_the_conversations(
+    window, ctx, monkeypatch
+) -> None:
+    window._apply_extension_contributions()
+    [entry] = sections(window)
+    cleared: list = []
+    monkeypatch.setattr(services.controller, "clear_history", lambda: cleared.append(1))
+
+    entry.panel.clear_button.click()
+
+    assert cleared == [1]
