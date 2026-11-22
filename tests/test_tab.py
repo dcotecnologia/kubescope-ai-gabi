@@ -36,7 +36,7 @@ def replies(monkeypatch):
     queue: list = []
     prompts: list[str] = []
 
-    def ask(assistant, prompt, model, system, images=()):
+    def ask(assistant, prompt, model, system, images=(), on_usage=None):
         prompts.append(prompt)
         reply = queue.pop(0)
         if isinstance(reply, Exception):

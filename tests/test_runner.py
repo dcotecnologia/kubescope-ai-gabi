@@ -6,6 +6,7 @@ import pytest
 
 from kubescope.gabi import runner
 from kubescope.gabi.runner import Assistant, AssistantError
+from kubescope.gabi.usage import Usage
 
 
 def _parse(line: str) -> tuple[str, str]:
@@ -350,3 +351,27 @@ def test_an_effort_is_left_out_for_a_program_that_cannot_set_it(monkeypatch) -> 
     monkeypatch.setattr(runner, "CUSTOM_EFFORTS", {"plain": "high"})
 
     assert runner.command(plain) == ["plain-ai", "x"]
+
+
+def test_the_tokens_of_an_answer_go_to_whoever_asked_for_them(start) -> None:
+    start(FakeProcess(output=_delta("hi") + "usage:12\n"))
+    seen: list = []
+    counting = Assistant(
+        "fake",
+        "Fake",
+        "fake-ai",
+        _options,
+        _parse,
+        parse_usage=lambda line: (
+            Usage(int(line[6:])) if line.startswith("usage:") else None
+        ),
+    )
+
+    assert list(runner.ask(counting, "q", on_usage=seen.append)) == ["hi"]
+    assert seen == [Usage(12)]
+
+    start(FakeProcess(output=_delta("hi")))
+    assert list(runner.ask(counting, "q", on_usage=seen.append)) == ["hi"]
+    start(FakeProcess(output="usage:3\n"))
+    assert list(runner.ask(counting, "q")) == []  # nobody asked: nothing to tell
+    assert seen == [Usage(12)]
