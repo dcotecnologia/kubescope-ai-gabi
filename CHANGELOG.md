@@ -6,7 +6,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Changed
 
-- The instructions of Gabi are about 30% shorter (the lists of kinds and views are said once, and the text is tighter), so every conversation starts with about 3,400 tokens, a quarter fewer; she still refuses changes in the read-only mode, asks which container, keeps to Kubernetes and asks for the same actions by @danilogco
+- Gabi no longer has a made-up birth date, age and hometown: she is an AI assistant, and speaks of herself in the feminine in the languages that mark gender by @danilogco
+- The instructions of Gabi are about a third shorter (the lists of kinds and views are said once, and the text is tighter), so every conversation starts with about 3,200 tokens instead of 4,400; she still refuses changes in the read-only mode, asks which container, keeps to Kubernetes and asks for the same actions by @danilogco
 
 ### Added
 

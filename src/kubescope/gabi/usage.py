@@ -14,6 +14,7 @@ class Usage:
     cache_read: int = 0  # read from the cache of the prompt
     cache_write: int = 0  # written to the cache of the prompt
     cost: float | None = None  # in dollars, when the program tells
+    cache_ttl: int = 0  # seconds the cache it wrote is kept; 0 when not told
 
     def __add__(self, other: Usage) -> Usage:
         cost = None if self.cost is None and other.cost is None else 0.0
@@ -25,6 +26,7 @@ class Usage:
             self.cache_read + other.cache_read,
             self.cache_write + other.cache_write,
             cost,
+            max(self.cache_ttl, other.cache_ttl),
         )
 
     @property
