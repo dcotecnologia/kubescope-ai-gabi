@@ -205,11 +205,12 @@ def focus_icon(color: str = "#ffffff", active: bool = False) -> QIcon:
         painter.setPen(_pen(color, 1.8))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         near, far = (8.0, 14.0) if active else (3.5, 18.5)
+        sign = -1 if active else 1  # the legs go out of the corners that are in
         for x, y, dx, dy in (
-            (near, near, 1, 1),
-            (far, near, -1, 1),
-            (near, far, 1, -1),
-            (far, far, -1, -1),
+            (near, near, sign, sign),
+            (far, near, -sign, sign),
+            (near, far, sign, -sign),
+            (far, far, -sign, -sign),
         ):
             painter.drawLine(QPointF(x, y), QPointF(x + 4 * dx, y))
             painter.drawLine(QPointF(x, y), QPointF(x, y + 4 * dy))

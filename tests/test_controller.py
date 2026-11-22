@@ -571,15 +571,13 @@ def test_the_focus_mode_fills_the_window_and_hides_the_side_menu_while_open(
     assert agreed.menu_hidden[-1] is False and not gabi.dock.is_focused
 
 
-def test_the_focus_mode_is_taken_back_on_the_next_run_and_freed_on_close(
+def test_the_focus_mode_is_taken_back_on_the_next_run_and_freed_on_unload(
     agreed,
 ) -> None:
     agreed.settings.focus_mode = True
     gabi = agreed.make()
-    assert gabi.dock.is_focused and not agreed.menu_hidden  # closed: the menu stays
+    assert gabi.dock.is_focused and agreed.menu_hidden[-1] is True  # open at once
 
-    gabi.open()
-    assert agreed.menu_hidden[-1] is True
     gabi.close()
     assert agreed.menu_hidden[-1] is False
 
@@ -640,3 +638,52 @@ def test_applying_the_settings_turns_the_focus_mode_on_and_off(agreed) -> None:
 
     gabi.apply_settings(True, "", {}, {}, {}, False)
     assert not agreed.settings.focus_mode and not gabi.dock.is_focused
+
+
+def test_in_the_focus_mode_the_chat_is_open_from_the_start_and_stays_open(
+    agreed,
+) -> None:
+    agreed.settings.focus_mode = True
+    gabi = agreed.make()
+
+    assert gabi.dock.is_open and gabi.tab is not None
+    assert agreed.menu_hidden[-1] is True
+    assert gabi.dock.panel.close_button.isHidden()
+
+    gabi.shortcut()  # Ctrl+G only takes the cursor, it does not put the page away
+    gabi.tab.input.setFocus()
+    gabi.shortcut()
+    assert gabi.dock.is_open
+
+    agreed.context = "dev"  # another cluster: another chat, open as well
+    gabi.context_changed()
+    assert gabi.dock.is_open and gabi.tab.context == "dev"
+
+
+def test_the_focus_mode_opens_nothing_on_its_own_without_what_it_needs(
+    setup, monkeypatch
+) -> None:
+    setup.settings.focus_mode = True
+    asked = answer(monkeypatch, True)
+
+    setup.context = ""  # no context yet
+    gabi = setup.make()
+    assert not gabi.dock.is_open and setup.messages == []
+
+    setup.context = "prod"  # one came, but the person did not agree yet
+    gabi.context_changed()
+    assert not gabi.dock.is_open and asked == []
+
+    gabi.open()  # the person opens it: asked once, then it is the page
+    assert gabi.dock.is_open and len(asked) == 1
+
+
+def test_turning_the_focus_mode_on_opens_the_chat_that_is_the_page(agreed) -> None:
+    gabi = agreed.make()
+    assert not gabi.dock.is_open
+
+    gabi.toggle_focus()
+    assert gabi.dock.is_open and gabi.dock.is_focused
+
+    gabi.apply_settings(True, "", {}, {}, {}, False)
+    assert not gabi.dock.is_focused
