@@ -357,6 +357,10 @@ class AssistantTab(QWidget):
         self.chip_bar.hide()
         self.status = QLabel("")
         self.status.hide()
+        self.usage_label = QLabel("")  # the tokens, under the box of the question
+        self.usage_label.setObjectName("assistantUsage")
+        self.usage_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.usage_label.hide()
         self.send_button.clicked.connect(self.submit)
         self.stop_button.clicked.connect(self.stop)
 
@@ -377,6 +381,7 @@ class AssistantTab(QWidget):
         bar.addWidget(self.chip_bar)
         bar.addWidget(self.status)
         bar.addLayout(row)
+        bar.addWidget(self.usage_label)
         self.composer = composer
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -390,6 +395,13 @@ class AssistantTab(QWidget):
             self._add_bubble(role, text)
             if role in ("user", "assistant"):
                 self.session.messages.append(Message(role, text))  # type: ignore[arg-type]
+
+    def set_usage(self, text: str, tip: str, shown: bool) -> None:
+        """Say what the session used in tokens, under the box of the
+        question."""
+        self.usage_label.setText(text)
+        self.usage_label.setToolTip(tip)
+        self.usage_label.setVisible(shown and bool(text))
 
     def use(self, assistant: Assistant) -> None:
         """Go on with the conversation on another assistant."""

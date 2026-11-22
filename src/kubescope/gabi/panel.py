@@ -219,6 +219,7 @@ class AssistantPanel(QFrame):
         for handle in self.handles:
             handle.setVisible(not focused and not self._floating)
         self.close_button.setVisible(not focused)  # the page is not put away
+        self.usage.setVisible(bool(self.usage.text()) and not focused)  # it moves
         self.restyle()
 
     def set_floating(self, floating: bool) -> None:
@@ -294,7 +295,7 @@ class AssistantPanel(QFrame):
         """Say, under the engine, what the conversation used in tokens."""
         self.usage.setText(text)
         self.usage.setToolTip(tip)
-        self.usage.setVisible(bool(text))
+        self.usage.setVisible(bool(text) and not self._focused)
 
     def show_chat(self, chat: QWidget | None) -> None:
         """Put a chat in the panel, in place of the one it had."""

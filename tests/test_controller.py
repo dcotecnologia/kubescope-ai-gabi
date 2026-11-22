@@ -43,6 +43,7 @@ class Setup:
         self.settings_shown = 0
         self.corners: list[int] = []
         self.menu_hidden: list[bool] = []
+        self.smaller: list[bool] = []
         self.actions: list[tuple] = []
         self.port = GabiPort(
             settings=self.settings,
@@ -63,6 +64,7 @@ class Setup:
             reserve_corner=self.corners.append,
             hide_side_menu=self.menu_hidden.append,
             content_area=lambda: (0, 40, 900, 500),
+            smaller_window=self.smaller.append,
             history_path=tmp_path / "history.json",
         )
 
@@ -612,7 +614,7 @@ def test_the_header_tells_the_tokens_of_the_session(agreed) -> None:
     assert gabi.dock.panel.usage.isHidden()
 
     gabi.open()
-    assert gabi.dock.panel.usage.isHidden()  # nothing was used yet
+    assert gabi.dock.panel.usage.text() == "0 in · 0 out · 0% cached"  # none yet
     session = gabi.tab.session
     session.usage = Usage(10, 2000, 90, 0, 0.0123)
     session.last_usage = Usage(5, 1000, 45, 0, 0.0123)
@@ -687,3 +689,25 @@ def test_turning_the_focus_mode_on_opens_the_chat_that_is_the_page(agreed) -> No
 
     gabi.apply_settings(True, "", {}, {}, {}, False)
     assert not gabi.dock.is_focused
+
+
+def test_in_the_focus_mode_there_is_no_button_and_the_tokens_are_under_the_box(
+    agreed,
+) -> None:
+    from kubescope.gabi.usage import Usage
+
+    gabi = agreed.make()
+    gabi.open()
+    assert not gabi.dock.bubble.isHidden() and agreed.smaller[-1] is False
+
+    gabi.toggle_focus()
+    assert gabi.dock.bubble.isHidden() and agreed.smaller[-1] is True
+    gabi.tab.session.usage = Usage(10, 2000, 90, 0, None)
+    gabi.show_usage()
+    assert gabi.dock.panel.usage.isHidden()  # not in the header
+    assert gabi.tab.usage_label.text() == "100 in · 2.0k out · 90% cached"
+    assert not gabi.tab.usage_label.isHidden() or not gabi.tab.isVisible()
+
+    gabi.toggle_focus()
+    assert not gabi.dock.bubble.isHidden() and agreed.smaller[-1] is False
+    assert gabi.tab.usage_label.isHidden() and not gabi.dock.panel.usage.isHidden()
