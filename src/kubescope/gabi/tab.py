@@ -398,12 +398,12 @@ class AssistantTab(QWidget):
             if role in ("user", "assistant"):
                 self.session.messages.append(Message(role, text))  # type: ignore[arg-type]
 
-    def set_usage(self, text: str, tip: str, shown: bool) -> None:
+    def set_usage(self, text: str, tip: str) -> None:
         """Say what the session used in tokens, under the box of the
         question."""
         self.usage_label.setText(text)
         self.usage_label.setToolTip(tip)
-        self.usage_label.setVisible(shown and bool(text))
+        self.usage_label.setVisible(bool(text))
 
     def use(self, assistant: Assistant) -> None:
         """Go on with the conversation on another assistant."""

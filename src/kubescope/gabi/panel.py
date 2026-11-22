@@ -175,10 +175,6 @@ class AssistantPanel(QFrame):
         names.addWidget(self.title)
         names.addWidget(self.engine)
         self.engine.hide()
-        self.usage = QLabel()
-        self.usage.setObjectName("assistantEngine")  # the look of the line above
-        names.addWidget(self.usage)
-        self.usage.hide()
         row.addLayout(names, 1)
         row.addWidget(self.new_button)
         row.addWidget(self.focus_button)
@@ -219,7 +215,6 @@ class AssistantPanel(QFrame):
         for handle in self.handles:
             handle.setVisible(not focused and not self._floating)
         self.close_button.setVisible(not focused)  # the page is not put away
-        self.usage.setVisible(bool(self.usage.text()) and not focused)  # it moves
         self.restyle()
 
     def set_floating(self, floating: bool) -> None:
@@ -290,12 +285,6 @@ class AssistantPanel(QFrame):
         effort."""
         self.engine.setText(text)
         self.engine.setVisible(bool(text))
-
-    def set_usage(self, text: str, tip: str = "") -> None:
-        """Say, under the engine, what the conversation used in tokens."""
-        self.usage.setText(text)
-        self.usage.setToolTip(tip)
-        self.usage.setVisible(bool(text) and not self._focused)
 
     def show_chat(self, chat: QWidget | None) -> None:
         """Put a chat in the panel, in place of the one it had."""

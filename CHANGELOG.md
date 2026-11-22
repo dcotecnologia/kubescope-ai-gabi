@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Fixed
+
+- The tokens and the cache of the session are shown under the box of the question, in the panel as in the focus mode, and no longer in the header by @danilogco
+
 ## [1.1.0] - 2026-11-22
 
 ### Added

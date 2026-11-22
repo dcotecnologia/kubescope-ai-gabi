@@ -300,10 +300,10 @@ class GabiController(QObject):
             self.open()
 
     def show_usage(self) -> None:
-        """Keep the header telling what the conversation used in tokens."""
+        """Keep the line under the box of the question telling what the
+        conversation used in tokens."""
         tab = self.tab
         if tab is None:
-            self.dock.panel.set_usage("")
             return
         used = tab.session.usage
         text = self.tr("{context} in · {output} out · {cache}% cached").format(
@@ -325,8 +325,7 @@ class GabiController(QObject):
         if used.cost is not None:
             lines.append(self.tr("Cost: ${cost}").format(cost=f"{used.cost:.4f}"))
         tip = "\n".join(lines)
-        self.dock.panel.set_usage(text, tip)
-        tab.set_usage(text, tip, self.dock.is_focused)  # in the focus mode, here
+        tab.set_usage(text, tip)
 
     def open(self, quiet: bool = False) -> None:
         """Open the chat with the assistant of the system, for this context.
@@ -495,7 +494,6 @@ class GabiController(QObject):
         tab, self.tab = self.tab, None
         self.dock.panel.show_chat(None)
         self.dock.panel.set_engine("")
-        self.dock.panel.set_usage("")
         if tab is not None:
             tab.shutdown()
             tab.deleteLater()

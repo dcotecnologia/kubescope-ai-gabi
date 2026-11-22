@@ -606,89 +606,28 @@ def test_a_new_session_starts_from_nothing_and_forgets_nothing_else(agreed) -> N
     assert gabi.dock.is_open
 
 
-def test_the_header_tells_the_tokens_of_the_session(agreed) -> None:
+def test_the_tokens_of_the_session_are_under_the_box_of_the_question(agreed) -> None:
     from kubescope.gabi.usage import Usage
 
     gabi = agreed.make()
-    gabi.show_usage()
-    assert gabi.dock.panel.usage.isHidden()
+    gabi.show_usage()  # no chat yet: nothing to tell
 
     gabi.open()
-    assert gabi.dock.panel.usage.text() == "0 in · 0 out · 0% cached"  # none yet
+    label = gabi.tab.usage_label
+    assert label.text() == "0 in · 0 out · 0% cached"  # none yet
     session = gabi.tab.session
     session.usage = Usage(10, 2000, 90, 0, 0.0123)
     session.last_usage = Usage(5, 1000, 45, 0, 0.0123)
     gabi.tab.usage_changed.emit()
 
-    panel = gabi.dock.panel
-    assert panel.usage.text() == "100 in · 2.0k out · 90% cached"
-    assert "Read from the cache: 90" in panel.usage.toolTip()
-    assert "Cost: $0.0123" in panel.usage.toolTip()
+    assert label.text() == "100 in · 2.0k out · 90% cached"
+    assert "Read from the cache: 90" in label.toolTip()
+    assert "Cost: $0.0123" in label.toolTip()
+    assert not hasattr(gabi.dock.panel, "usage")  # and not in the header
 
     session.usage = Usage(10, 2, 0, 0, None)
     gabi.show_usage()
-    assert "Cost" not in panel.usage.toolTip()
-
-
-def test_applying_the_settings_turns_the_focus_mode_on_and_off(agreed) -> None:
-    gabi = agreed.make()
-    gabi.open()
-
-    gabi.apply_settings(True, "", {}, {}, {}, True)
-    assert agreed.settings.focus_mode and gabi.dock.is_focused
-    assert agreed.menu_hidden[-1] is True
-
-    gabi.apply_settings(True, "", {}, {}, {}, False)
-    assert not agreed.settings.focus_mode and not gabi.dock.is_focused
-
-
-def test_in_the_focus_mode_the_chat_is_open_from_the_start_and_stays_open(
-    agreed,
-) -> None:
-    agreed.settings.focus_mode = True
-    gabi = agreed.make()
-
-    assert gabi.dock.is_open and gabi.tab is not None
-    assert agreed.menu_hidden[-1] is True
-    assert gabi.dock.panel.close_button.isHidden()
-
-    gabi.shortcut()  # Ctrl+G only takes the cursor, it does not put the page away
-    gabi.tab.input.setFocus()
-    gabi.shortcut()
-    assert gabi.dock.is_open
-
-    agreed.context = "dev"  # another cluster: another chat, open as well
-    gabi.context_changed()
-    assert gabi.dock.is_open and gabi.tab.context == "dev"
-
-
-def test_the_focus_mode_opens_nothing_on_its_own_without_what_it_needs(
-    setup, monkeypatch
-) -> None:
-    setup.settings.focus_mode = True
-    asked = answer(monkeypatch, True)
-
-    setup.context = ""  # no context yet
-    gabi = setup.make()
-    assert not gabi.dock.is_open and setup.messages == []
-
-    setup.context = "prod"  # one came, but the person did not agree yet
-    gabi.context_changed()
-    assert not gabi.dock.is_open and asked == []
-
-    gabi.open()  # the person opens it: asked once, then it is the page
-    assert gabi.dock.is_open and len(asked) == 1
-
-
-def test_turning_the_focus_mode_on_opens_the_chat_that_is_the_page(agreed) -> None:
-    gabi = agreed.make()
-    assert not gabi.dock.is_open
-
-    gabi.toggle_focus()
-    assert gabi.dock.is_open and gabi.dock.is_focused
-
-    gabi.apply_settings(True, "", {}, {}, {}, False)
-    assert not gabi.dock.is_focused
+    assert "Cost" not in label.toolTip()
 
 
 def test_in_the_focus_mode_there_is_no_button_and_the_tokens_are_under_the_box(
@@ -704,13 +643,11 @@ def test_in_the_focus_mode_there_is_no_button_and_the_tokens_are_under_the_box(
     assert gabi.dock.bubble.isHidden() and agreed.smaller[-1] is True
     gabi.tab.session.usage = Usage(10, 2000, 90, 0, None)
     gabi.show_usage()
-    assert gabi.dock.panel.usage.isHidden()  # not in the header
     assert gabi.tab.usage_label.text() == "100 in · 2.0k out · 90% cached"
-    assert not gabi.tab.usage_label.isHidden() or not gabi.tab.isVisible()
 
     gabi.toggle_focus()
     assert not gabi.dock.bubble.isHidden() and agreed.smaller[-1] is False
-    assert gabi.tab.usage_label.isHidden() and not gabi.dock.panel.usage.isHidden()
+    assert gabi.tab.usage_label.text() == "100 in · 2.0k out · 90% cached"  # still
 
 
 def test_the_focus_page_steps_aside_for_the_settings_and_comes_back(agreed) -> None:
