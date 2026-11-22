@@ -13,10 +13,13 @@ import os
 import subprocess
 import sys
 import tempfile
-from collections.abc import Callable, Generator, Sequence
+import threading
+from collections import deque
+from collections.abc import Callable, Generator, Iterator, Sequence
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
+from typing import Protocol
 
 from kubescope.sdk.errors import first_line
 from kubescope.sdk.flatpak import host_has, in_flatpak, on_host
@@ -50,6 +53,87 @@ class AssistantError(Exception):
     """The assistant could not answer; the message says why."""
 
 
+class Live(Protocol):
+    """A program that stays running through a conversation, so that it keeps
+    the conversation itself (in memory, never on disk) and what is already said
+    is not sent again with every question."""
+
+    @property
+    def alive(self) -> bool: ...
+
+    def ask(
+        self,
+        text: str,
+        images: Sequence[Attachment],
+        on_usage: Callable[[Usage], None],
+    ) -> Generator[str]:
+        """Send a message and yield the answer in pieces."""
+        ...
+
+    def close(self) -> None:
+        """Stop the program."""
+        ...
+
+
+class Child:
+    """A program started for a conversation: its standard input and output, and
+    the last lines of what it said on its error output, read as they come so
+    that it never blocks on a full pipe."""
+
+    def __init__(self, arguments: list[str]) -> None:
+        try:
+            self.process = subprocess.Popen(
+                arguments,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+                cwd=tempfile.gettempdir(),  # no project files for it to read
+                creationflags=_NO_WINDOW,
+            )
+        except OSError as error:
+            raise AssistantError(str(error)) from error
+        assert self.process.stdin is not None and self.process.stdout is not None
+        assert self.process.stderr is not None
+        self._stdin, self._stdout = self.process.stdin, self.process.stdout
+        self._errors: deque[str] = deque(maxlen=20)
+        threading.Thread(
+            target=self._drain, args=(self.process.stderr,), daemon=True
+        ).start()
+
+    def _drain(self, stream: Iterator[str]) -> None:
+        for line in stream:
+            self._errors.append(line)
+
+    @property
+    def alive(self) -> bool:
+        return self.process.poll() is None
+
+    def write(self, text: str) -> None:
+        try:
+            self._stdin.write(text)
+            self._stdin.flush()
+        except OSError as error:
+            raise AssistantError(str(error)) from error
+
+    def lines(self) -> Iterator[str]:
+        return iter(self._stdout)
+
+    def reason(self) -> str:
+        """Why it stopped, from the first line of its error output."""
+        return first_line("".join(self._errors))
+
+    def close(self) -> None:
+        if self.process.poll() is None:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait()
+
+
 @dataclass(frozen=True, slots=True)
 class Assistant:
     key: str  # what the settings keep
@@ -77,6 +161,9 @@ class Assistant:
     # the model and the effort the program uses when it is told none, from its own
     # configuration; empty when it does not say
     defaults: Callable[[], tuple[str, str]] | None = None
+    # for a program that can keep a conversation: starts it, from the model and
+    # the instructions; None sends the whole conversation with every question
+    open_live: Callable[[str | None, str], Live] | None = None
     # the tokens an answer used, from a line of its output; None for any other line
     parse_usage: Callable[[str], Usage | None] | None = None
 
@@ -139,6 +226,16 @@ def command(
     if effort and assistant.effort_options is not None:
         arguments += assistant.effort_options(effort)
     return on_host(arguments)
+
+
+def start_live(
+    assistant: Assistant, model: str | None = None, system: str = SYSTEM_PROMPT
+) -> Live | None:
+    """The program running for a conversation, or None for one that answers a
+    question at a time."""
+    if assistant.open_live is None:
+        return None
+    return assistant.open_live(model, system)
 
 
 def ask(

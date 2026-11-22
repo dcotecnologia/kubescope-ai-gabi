@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- Claude Code is kept running for the chat, so each question sends only what is new and not the whole conversation again: the conversation stays in the memory of that program and is never saved to disk, the cache is reused and a long chat costs much less (about 60% less input in six long questions); it is started again, with the conversation, when the model, the language or the mode change, when an answer is stopped or when it dies by @danilogco
+- The conversation is compacted into a summary made by the assistant: by hand with `/compact`, and by itself before a question when it has grown (100,000 tokens in the context of Claude Code, or when the oldest messages were about to be left out) by @danilogco
+
 ### Fixed
 
 - Claude Code is run with none of your own MCP servers, skills or user settings, which were sent with every question: a simple greeting went from about 10,000 tokens to about 4,400 by @danilogco

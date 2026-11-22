@@ -875,3 +875,73 @@ def test_enter_sends_and_shift_enter_goes_to_the_next_line(replies) -> None:
 
     assert len(prompts) == 1 and "first line\nsecond" in prompts[0]
     assert tab.input.toPlainText() == ""
+
+
+def test_compact_summarizes_the_conversation_and_says_how_much_shorter(
+    replies,
+) -> None:
+    queue, prompts = replies
+    queue.extend([["a " * 200], ["b " * 200], ["A short summary."]])
+    tab = _tab()
+    _say(tab, "one " * 200)
+    _say(tab, "two " * 200)
+
+    _say(tab, "/compact")
+
+    assert "Summarize" not in prompts[-1] and "summary" in prompts[-1]
+    assert tab.session.messages[0].text.endswith("A short summary.")
+    assert len(tab.session.messages) == 1
+    role, text = tab.entries()[-1]
+    assert role == "app" and "was compacted: about" in text and "tokens became" in text
+    assert tab.input.toPlainText() == "" and not tab.busy
+
+
+def test_compact_with_nothing_said_says_so_and_a_failure_says_why(replies) -> None:
+    queue, prompts = replies
+    tab = _tab()
+
+    _say(tab, "/compact")
+    assert tab.entries()[-1] == ("app", "There is nothing to compact yet.")
+    assert prompts == []
+
+    queue.extend([["a"], ["b"], AssistantError("no quota")])
+    _say(tab, "one")
+    _say(tab, "two")
+    _say(tab, "/compact")
+    assert "could not be compacted: no quota" in tab.status.text()
+    assert len(tab.session.messages) == 4  # it was left as it was
+
+
+def test_a_conversation_that_grew_is_compacted_before_the_next_question(
+    replies, monkeypatch
+) -> None:
+    queue, prompts = replies
+    queue.extend([["a"], ["b"], ["The summary."], ["answer"]])
+    tab = _tab()
+    _say(tab, "one")
+    _say(tab, "two")
+    monkeypatch.setattr(tab.session, "needs_compact", lambda: True)
+
+    _say(tab, "three")
+
+    assert "summary" in prompts[-2]  # first the summary, then the question
+    assert prompts[-1].startswith(f"User: {chat.SUMMARY_LABEL}")
+    assert prompts[-1].endswith("Answer the last message of the User as the Assistant.")
+    roles = [role for role, _text in tab.entries()]
+    assert roles.count("app") == 1 and tab.entries()[-1][0] == "assistant"
+
+
+def test_a_compaction_that_fails_before_a_question_stops_it(
+    replies, monkeypatch
+) -> None:
+    queue, prompts = replies
+    queue.extend([["a"], ["b"], AssistantError("down")])
+    tab = _tab()
+    _say(tab, "one")
+    _say(tab, "two")
+    monkeypatch.setattr(tab.session, "needs_compact", lambda: True)
+
+    _say(tab, "three")
+
+    assert "down" in tab.status.text()
+    assert len(prompts) == 3  # the question itself was not sent

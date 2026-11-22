@@ -358,10 +358,13 @@ def run(namespace: argparse.Namespace) -> int:
             History(history),
             confirm=terminal.confirm,
         )
-        if namespace.message:
-            chat.ask(" ".join(namespace.message))
-            return 0
-        return _loop(chat)
+        try:
+            if namespace.message:
+                chat.ask(" ".join(namespace.message))
+                return 0
+            return _loop(chat)
+        finally:
+            session.close()  # the program kept running for the conversation
     except (ClusterError, ValueError) as error:
         _error(str(error))
         return 1

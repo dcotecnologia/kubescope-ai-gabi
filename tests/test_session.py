@@ -159,3 +159,259 @@ def test_the_session_adds_up_the_tokens_of_its_answers_and_starts_over(answers) 
 
     session.reset()
     assert session.messages == [] and not session.usage and not session.last_usage
+
+
+class FakeLive:
+    """A program kept running: what it was asked, and how it answers."""
+
+    def __init__(self, plan: dict) -> None:
+        self.plan = plan
+        self.asked: list[tuple[str, int]] = []
+        self.up = True
+        self.closed = False
+
+    @property
+    def alive(self) -> bool:
+        return self.up
+
+    def ask(self, text, images, on_usage):
+        self.asked.append((text, len(images)))
+        if self.plan.get("usage") is not None:
+            on_usage(self.plan["usage"])
+        outcome = self.plan["outcomes"].pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        yield from outcome
+
+    def close(self) -> None:
+        self.up = False
+        self.closed = True
+
+
+LIVE = Assistant(
+    "live",
+    "Live",
+    "live-ai",
+    lambda model, system: [],
+    lambda line: ("", ""),
+    open_live=lambda model, system: FakeLive({}),  # the fixture starts its own
+)
+
+
+@pytest.fixture
+def lives(monkeypatch):
+    """Make the program kept running a fake one; every one started is kept."""
+    started: list[FakeLive] = []
+    plan: dict = {"outcomes": [], "usage": None}
+
+    def start(assistant, model=None, system=""):
+        live = FakeLive(plan)
+        started.append(live)
+        return live
+
+    monkeypatch.setattr(chat.runner, "start_live", start)
+    return started, plan
+
+
+def test_a_program_that_keeps_the_conversation_is_sent_only_what_is_new(lives) -> None:
+    started, plan = lives
+    session = ChatSession(LIVE, system="rules")
+    plan["outcomes"] = [["It is ", "a Pod."], ["Yes."]]
+
+    assert list(session.send("what is x?")) == ["It is ", "a Pod."]
+    assert list(session.send("really?", "the screen")) == ["Yes."]
+
+    assert len(started) == 1  # the same program answered both
+    first, second = started[0].asked
+    assert first[0].startswith("User: what is x?")  # a first time, the conversation
+    assert second[0] == (
+        "really?\n\n[What the person sees in KubeScope right now]\nthe screen"
+    )
+    assert session.messages[-2:] == [
+        Message("user", "really?", "the screen"),
+        Message("assistant", "Yes."),
+    ]
+
+
+def test_the_files_of_the_newest_message_go_with_it_and_its_images_beside(
+    lives,
+) -> None:
+    from kubescope.gabi.attachments import Attachment
+
+    started, plan = lives
+    session = ChatSession(LIVE)
+    plan["outcomes"] = [["a"], ["b"]]
+    log = Attachment("app.log", "text", b"boom\n")
+    shot = Attachment("shot.png", "image", b"x", "image/png")
+
+    list(session.send("one"))
+    list(session.send("why?", "", (log, shot)))
+
+    text, images = started[0].asked[1]
+    assert "why?" in text and "boom" in text and images == 1
+
+
+def test_the_program_is_started_again_when_what_it_depends_on_changes(lives) -> None:
+    started, plan = lives
+    session = ChatSession(LIVE, system="rules")
+    plan["outcomes"] = [["a"], ["b"]]
+    list(session.send("one"))
+
+    session.system = "other rules"  # the language or the mode changed
+    list(session.send("two"))
+
+    assert len(started) == 2 and started[0].closed
+    assert started[1].asked[0][0].startswith("User: one")  # it is told what was said
+    assert "Assistant: a" in started[1].asked[0][0]
+
+
+def test_a_stopped_answer_leaves_a_program_that_is_started_again(lives) -> None:
+    started, plan = lives
+    session = ChatSession(LIVE)
+    plan["outcomes"] = [["It is ", "a Pod."], ["ok"]]
+    stream = session.send("what is x?")
+    assert next(stream) == "It is "
+
+    stream.close()  # stopped halfway: the program is in the middle of an answer
+
+    assert started[0].closed
+    list(session.send("and?"))
+    assert len(started) == 2
+    assert "Assistant: It is " in started[1].asked[0][0]  # what came is kept
+
+
+def test_a_failure_stops_the_program_and_takes_the_question_back(lives) -> None:
+    started, plan = lives
+    session = ChatSession(LIVE)
+    plan["outcomes"] = [AssistantError("no")]
+
+    with pytest.raises(AssistantError):
+        list(session.send("one"))
+
+    assert started[0].closed and session.messages == []
+
+
+def test_a_program_that_died_since_the_last_question_is_replaced(lives) -> None:
+    started, plan = lives
+    session = ChatSession(LIVE)
+    plan["outcomes"] = [["a"], ["b"]]
+    list(session.send("one"))
+    started[0].up = False  # it died between the questions
+
+    assert list(session.send("two")) == ["b"]
+
+    assert len(started) == 2 and "User: one" in started[1].asked[0][0]
+
+
+def test_a_program_that_dies_on_the_question_is_replaced_once(lives) -> None:
+    started, plan = lives
+    session = ChatSession(LIVE)
+    plan["outcomes"] = [["a"], AssistantError("gone"), ["b"]]
+    list(session.send("one"))
+
+    assert list(session.send("two")) == ["b"]  # it came back, told the whole of it
+    assert len(started) == 2 and "User: one" in started[1].asked[0][0]
+
+    plan["outcomes"] = [AssistantError("gone"), AssistantError("again")]
+    started[1].up = True
+    with pytest.raises(AssistantError, match="again"):
+        list(session.send("three"))  # a fresh one failing is an error
+
+
+def test_closing_or_starting_over_stops_the_program(lives) -> None:
+    started, plan = lives
+    session = ChatSession(LIVE)
+    plan["outcomes"] = [["a"]]
+    list(session.send("one"))
+
+    session.close()
+    assert started[0].closed
+    session.close()  # nothing left to stop
+
+    plan["outcomes"] = [["a"]]
+    list(session.send("two"))
+    session.reset()
+    assert started[1].closed
+
+
+def test_compacting_replaces_the_conversation_with_a_summary_of_it(answers) -> None:
+    calls, plan = answers
+    session = ChatSession(FAKE, system="rules")
+    plan["pieces"] = ["a"]
+    list(session.send("one " * 40))
+    list(session.send("two " * 40))
+    session.last_usage = Usage(1, 1, 1, 1)
+
+    plan["pieces"] = ["  The summary.  "]
+    before, after = session.compact()
+
+    assert calls[-1][1].startswith("User: one one")
+    assert "Assistant: a\n\nUser: two two" in calls[-1][1]
+    assert calls[-1][1].endswith(chat.SUMMARY_REQUEST)
+    assert session.messages == [Message("user", f"{chat.SUMMARY_LABEL}\nThe summary.")]
+    assert before > after and after == session.size()
+    assert not session.last_usage  # nothing is known of the new conversation yet
+
+
+def test_compacting_needs_something_to_compact_and_a_summary(answers) -> None:
+    _calls, plan = answers
+    session = ChatSession(FAKE)
+    assert session.compact() == (0, 0)  # nothing said yet
+    plan["pieces"] = ["a"]
+    list(session.send("one"))
+    list(session.send("two"))
+
+    plan["pieces"] = ["  "]
+    with pytest.raises(AssistantError, match="no summary"):
+        session.compact()
+    assert len(session.messages) == 4  # as it was
+
+
+def test_a_long_conversation_is_summarized_from_its_newest_part(answers) -> None:
+    calls, plan = answers
+    session = ChatSession(FAKE)
+    session.messages = [
+        Message("user", "x" * 100_000),
+        Message("assistant", "y" * 100_000),
+        Message("user", "last"),
+    ]
+    plan["pieces"] = ["s"]
+
+    session.compact()
+
+    asked = calls[-1][1]
+    assert "last" in asked and "x" * 100 not in asked  # the oldest is left out
+
+
+def test_the_conversation_is_compacted_when_it_is_long(lives) -> None:
+    started, plan = lives
+    session = ChatSession(LIVE, limit=1000)
+    assert not session.needs_compact()  # nothing said
+
+    session.messages = [Message("user", "a"), Message("assistant", "b")]
+    session.last_usage = Usage(10, 1, 1000, 0)
+    assert not session.needs_compact()  # a program that keeps it: by its tokens
+    session.last_usage = Usage(10, 1, chat.COMPACT_TOKENS, 0)
+    assert session.needs_compact()
+
+    plain = ChatSession(FAKE, limit=100)  # one that is sent it all: by its size
+    plain.messages = [Message("user", "a" * 40), Message("assistant", "b" * 40)]
+    assert not plain.needs_compact()
+    plain.messages.append(Message("user", "c" * 20))
+    assert plain.needs_compact()
+
+
+def test_compacting_stops_the_program_kept_running(lives, monkeypatch) -> None:
+    started, plan = lives
+    session = ChatSession(LIVE)
+    plan["outcomes"] = [["a"], ["b"]]
+    list(session.send("one"))
+    list(session.send("two"))
+    monkeypatch.setattr(chat.runner, "ask", lambda *args, **kwargs: iter(["sum"]))
+
+    session.compact()
+
+    assert started[0].closed
+    plan["outcomes"] = [["c"]]
+    list(session.send("three"))
+    assert "Summary of the conversation" in started[1].asked[0][0]  # it is told

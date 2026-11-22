@@ -1,6 +1,7 @@
 import io
 import shutil
 import subprocess
+import time
 
 import pytest
 
@@ -54,7 +55,7 @@ class FakeProcess:
         self.running = True
         self.terminated = False
 
-    def wait(self) -> int:
+    def wait(self, timeout=None) -> int:
         self.running = False
         return self.code
 
@@ -375,3 +376,73 @@ def test_the_tokens_of_an_answer_go_to_whoever_asked_for_them(start) -> None:
     start(FakeProcess(output="usage:3\n"))
     assert list(runner.ask(counting, "q")) == []  # nobody asked: nothing to tell
     assert seen == [Usage(12)]
+
+
+class Stream(io.StringIO):
+    pass
+
+
+def _child(monkeypatch, process):
+    monkeypatch.setattr(subprocess, "Popen", lambda arguments, **options: process)
+    return runner.Child(["fake-ai"])
+
+
+def test_a_child_is_written_to_read_from_and_stopped(monkeypatch) -> None:
+    process = FakeProcess(output="one\ntwo\n", stderr="warning: x\nsecond\n")
+    child = _child(monkeypatch, process)
+
+    child.write("hello")
+    assert process.stdin.written == ["hello"]
+    assert list(child.lines()) == ["one\n", "two\n"]
+    for _ in range(50):  # the error output is read by a thread of its own
+        if child.reason():
+            break
+        time.sleep(0.01)
+    assert child.reason() == "warning: x" and child.alive
+
+    child.close()
+    assert process.terminated
+    child.close()  # already stopped
+
+
+def test_a_child_that_cannot_start_or_be_written_to_says_why(monkeypatch) -> None:
+    def refuse(arguments, **options):
+        raise OSError("no such program")
+
+    monkeypatch.setattr(subprocess, "Popen", refuse)
+    with pytest.raises(AssistantError, match="no such program"):
+        runner.Child(["fake-ai"])
+
+    child = _child(monkeypatch, FakeProcess(write_error=BrokenPipeError("closed")))
+    with pytest.raises(AssistantError, match="closed"):
+        child.write("hello")
+
+
+def test_a_child_that_does_not_stop_is_killed(monkeypatch) -> None:
+    class Stubborn(FakeProcess):
+        killed = False
+
+        def wait(self, timeout=None):
+            if timeout is not None and not self.killed:
+                raise subprocess.TimeoutExpired("fake-ai", timeout)
+            return 0
+
+        def kill(self) -> None:
+            self.killed = True
+
+        def terminate(self) -> None:
+            pass
+
+        def poll(self):
+            return None if not self.killed else 0
+
+    process = Stubborn()
+    _child(monkeypatch, process).close()
+
+    assert process.killed
+
+
+def test_an_assistant_that_does_not_keep_the_conversation_starts_nothing() -> None:
+    assert runner.start_live(FAKE) is None
+    kept = Assistant("k", "K", "k-ai", _options, _parse, open_live=lambda m, s: (m, s))  # type: ignore[arg-type,return-value]
+    assert runner.start_live(kept, "big", "rules") == ("big", "rules")

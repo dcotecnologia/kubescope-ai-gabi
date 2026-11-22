@@ -57,8 +57,10 @@ from kubescope.gabi.runner import (
 )
 from kubescope.gabi.services import themed
 from kubescope.gabi.session import ChatSession, Message
+from kubescope.gabi.usage import compact
 
 SHUTDOWN_WAIT_MS = 3000
+COMPACT_COMMAND = "/compact"  # summarizes the conversation, to make it short
 DEBUG_COMMAND = "/debug"  # tells what answers, from the settings
 KUBE_COMMANDS = ("/kube", "/kubectl")  # tell what the computer has for kubectl
 MAX_FOLLOW_UPS = 5  # reads the assistant may ask for after one question
@@ -217,11 +219,30 @@ class ChatInput(QPlainTextEdit):
             super().insertFromMimeData(source)
 
 
+class CompactWorker(QThread):
+    """Compact the conversation: the assistant summarizes it."""
+
+    done = Signal(int, int)  # the characters it was and the characters it is
+    failed = Signal(str)
+
+    def __init__(self, session: ChatSession) -> None:
+        super().__init__()
+        self.session = session
+        self.stopped = False  # asked to stop: the summary is made all the same
+
+    def run(self) -> None:
+        try:
+            self.done.emit(*self.session.compact())
+        except AssistantError as error:
+            self.failed.emit(str(error))
+
+
 class AnswerWorker(QThread):
     """Ask the assistant and hand over the answer as it comes."""
 
     piece = Signal(str)
     failed = Signal(str)
+    compacted = Signal(int, int)  # a long conversation was compacted first
 
     def __init__(
         self,
@@ -229,15 +250,23 @@ class AnswerWorker(QThread):
         text: str,
         screen: str = "",
         files: tuple[Attachment, ...] = (),
+        compact: bool = False,
     ) -> None:
         super().__init__()
         self.session = session
         self.text = text
         self.screen = screen
         self.files = files
+        self.compact = compact
         self.stopped = False
 
     def run(self) -> None:
+        if self.compact:
+            try:
+                self.compacted.emit(*self.session.compact())
+            except AssistantError as error:
+                self.failed.emit(str(error))
+                return
         stream = self.session.send(self.text, self.screen, self.files)
         try:
             for piece in stream:
@@ -309,7 +338,7 @@ class AssistantTab(QWidget):
         self._follow_ups = 0
         self._failed = False
         self._at_end = True  # the view follows the newest message
-        self._worker: AnswerWorker | None = None
+        self._worker: AnswerWorker | CompactWorker | None = None
         self._reader: ReadWorker | None = None
 
         self.thread_scroll = QScrollArea()
@@ -458,6 +487,10 @@ class AssistantTab(QWidget):
             self.input.clear()
             self.kube_requested.emit()
             return
+        if text == COMPACT_COMMAND and not self.busy:
+            self.input.clear()
+            self._compact()
+            return
         if (not text and not self._pending) or self.busy:
             return
         files, self._pending = tuple(self._pending), []
@@ -465,6 +498,41 @@ class AssistantTab(QWidget):
         self.input.clear()
         self._follow_ups = 0
         self._ask(text or self.tr("See what is attached."), "user", text, files)
+
+    def _compact(self) -> None:
+        """Compact the conversation, which the assistant summarizes."""
+        if len(self.session.messages) < 2:
+            self.note(self.tr("There is nothing to compact yet."))
+            return
+        self._failed = False
+        self._set_busy(True)
+        self._show_status(self.tr("Compacting the conversation..."))
+        self._worker = worker = CompactWorker(self.session)
+        worker.done.connect(self._compacted)
+        worker.failed.connect(self._compact_failed)
+        worker.finished.connect(lambda: self._compact_finished(worker))
+        worker.start()
+
+    def _compacted(self, before: int, after: int) -> None:
+        """Tell that the conversation got shorter, in tokens, near enough."""
+        self.note(
+            self.tr(
+                "The conversation was compacted: about {before} tokens became "
+                "about {after}."
+            ).format(before=compact(before // 4), after=compact(after // 4))
+        )
+
+    def _compact_failed(self, message: str) -> None:
+        self._failed = True
+        self.status.setText(
+            self.tr("The conversation could not be compacted: {message}").format(
+                message=message
+            )
+        )
+
+    def _compact_finished(self, worker: CompactWorker) -> None:
+        self._worker = None
+        self._set_busy(False)
 
     def _choose_files(self) -> None:
         """Pick the files to attach."""
@@ -834,7 +902,14 @@ class AssistantTab(QWidget):
         self._stream = None
         self._failed = False
         self._set_busy(True)
-        self._worker = worker = AnswerWorker(self.session, text, self._screen(), files)
+        self._worker = worker = AnswerWorker(
+            self.session,
+            text,
+            self._screen(),
+            files,
+            compact=self.session.needs_compact(),
+        )
+        worker.compacted.connect(self._compacted)
         worker.piece.connect(self._on_piece)
         worker.failed.connect(self._on_failed)
         worker.finished.connect(lambda: self._on_finished(worker))
@@ -995,3 +1070,4 @@ class AssistantTab(QWidget):
                 if isinstance(worker, AnswerWorker):
                     worker.stopped = True
                 worker.wait(SHUTDOWN_WAIT_MS)
+        self.session.close()  # the program kept running goes with the tab

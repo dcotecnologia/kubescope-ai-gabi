@@ -23,5 +23,6 @@ before you install any extension.
 - It asks for the least permissions it needs, and the README says why it asks for each one.
 - It reads clusters and accounts only through the services the app lends it, and changes nothing outside the write mode.
 - It runs the program of the assistant with no tools, no saved session and none of your own configuration of it (no MCP servers, skills or user settings), so that only what you type and what she reads from the cluster is sent.
+- Claude Code stays running while a chat is open, and holds the conversation in its memory only (it is told to save no session); it is stopped when the chat is closed, and what is sent is only what is new, as it already had the rest.
 - It never stores or logs credentials or secrets, and it makes no network request of its own beyond what the README says.
 - Every release is a tag; KubeScope installs what it recommends only if the files are the ones whose hash it pinned.

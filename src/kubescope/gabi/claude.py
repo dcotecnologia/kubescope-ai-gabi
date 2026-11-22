@@ -2,12 +2,13 @@
 
 import json
 import os
-from collections.abc import Sequence
+from collections.abc import Callable, Generator, Sequence
 from pathlib import Path
 from typing import Any
 
+from kubescope.gabi import runner
 from kubescope.gabi.attachments import Attachment
-from kubescope.gabi.runner import Assistant
+from kubescope.gabi.runner import Assistant, AssistantError, Child
 from kubescope.gabi.usage import Usage, count
 
 
@@ -99,6 +100,57 @@ def parse_usage(line: str) -> Usage | None:
     )
 
 
+def _is_result(line: str) -> bool:
+    try:
+        return _dict(json.loads(line)).get("type") == "result"
+    except ValueError:
+        return False
+
+
+class ClaudeLive:
+    """One `claude` program kept running for a conversation: the messages go in
+    one by one, and it keeps what was said in memory (it is told to save no
+    session), so each question sends only what is new."""
+
+    def __init__(self, child: Child) -> None:
+        self.child = child
+
+    @property
+    def alive(self) -> bool:
+        return self.child.alive
+
+    def ask(
+        self,
+        text: str,
+        images: Sequence[Attachment],
+        on_usage: Callable[[Usage], None],
+    ) -> Generator[str]:
+        self.child.write(image_payload(text, images))
+        for line in self.child.lines():
+            piece, error = parse_line(line)
+            if error:
+                raise AssistantError(error)
+            if piece:
+                yield piece
+            used = parse_usage(line)
+            if used is not None:
+                on_usage(used)
+            if _is_result(line):  # the answer is over, the program waits
+                return
+        raise AssistantError(
+            self.child.reason() or "The assistant stopped without an answer"
+        )
+
+    def close(self) -> None:
+        self.child.close()
+
+
+def open_live(model: str | None, system: str) -> ClaudeLive:
+    """Start `claude` for a conversation, with the same options as for a
+    question, which take messages one by one."""
+    return ClaudeLive(Child(runner.command(CLAUDE, model, system, with_images=True)))
+
+
 def defaults() -> tuple[str, str]:
     """The model and the effort in the settings of Claude Code."""
     folder = os.environ.get("CLAUDE_CONFIG_DIR") or str(Path.home() / ".claude")
@@ -135,4 +187,5 @@ CLAUDE = Assistant(
     effort_options=lambda effort: ["--effort", effort],
     defaults=defaults,
     parse_usage=parse_usage,
+    open_live=open_live,
 )
