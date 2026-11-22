@@ -186,6 +186,37 @@ def close_icon(color: str = "#ffffff") -> QIcon:
     return _draw(paint)
 
 
+def plus_icon(color: str = "#ffffff") -> QIcon:
+    """A plus, for a new session."""
+
+    def paint(painter: QPainter) -> None:
+        painter.setPen(_pen(color, 2.0))
+        painter.drawLine(QPointF(11, 4.5), QPointF(11, 17.5))
+        painter.drawLine(QPointF(4.5, 11), QPointF(17.5, 11))
+
+    return _draw(paint)
+
+
+def focus_icon(color: str = "#ffffff", active: bool = False) -> QIcon:
+    """Four corners that point out, to fill the window with the chat, or in, to
+    leave that mode."""
+
+    def paint(painter: QPainter) -> None:
+        painter.setPen(_pen(color, 1.8))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        near, far = (8.0, 14.0) if active else (3.5, 18.5)
+        for x, y, dx, dy in (
+            (near, near, 1, 1),
+            (far, near, -1, 1),
+            (near, far, 1, -1),
+            (far, far, -1, -1),
+        ):
+            painter.drawLine(QPointF(x, y), QPointF(x + 4 * dx, y))
+            painter.drawLine(QPointF(x, y), QPointF(x, y + 4 * dy))
+
+    return _draw(paint)
+
+
 def icon_only(button: QAbstractButton, tip: str, icon: QIcon) -> None:
     """Show a button as its icon alone, with the words as its tip."""
     button.setText("")

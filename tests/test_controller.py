@@ -42,6 +42,7 @@ class Setup:
         self.messages: list[tuple] = []
         self.settings_shown = 0
         self.corners: list[int] = []
+        self.menu_hidden: list[bool] = []
         self.actions: list[tuple] = []
         self.port = GabiPort(
             settings=self.settings,
@@ -60,6 +61,7 @@ class Setup:
                 self, "settings_shown", self.settings_shown + 1
             ),
             reserve_corner=self.corners.append,
+            hide_side_menu=self.menu_hidden.append,
             history_path=tmp_path / "history.json",
         )
 
@@ -542,3 +544,87 @@ def test_debug_says_what_the_program_is_set_to_use(agreed) -> None:
     report = gabi.debug_report()
 
     assert "Model: sonnet (what Claude Code is set to use)" in report
+
+
+def test_the_focus_mode_fills_the_window_and_hides_the_side_menu_while_open(
+    agreed,
+) -> None:
+    gabi = agreed.make()
+    gabi.open()
+    assert agreed.menu_hidden[-1] is False and not gabi.dock.panel.new_button.isHidden()
+
+    gabi.toggle_focus()
+    assert gabi.dock.is_focused and agreed.menu_hidden[-1] is True
+    host = gabi.dock.host
+    assert gabi.dock.panel.geometry().size() == host.size()
+    assert agreed.settings.assistant_panel["focus"] is True
+
+    gabi.toggle()  # put away: the menu comes back, the mode is kept
+    assert agreed.menu_hidden[-1] is False and gabi.dock.is_focused
+    gabi.toggle()
+    assert agreed.menu_hidden[-1] is True
+
+    gabi.dock.set_floating(True)  # out of the window there is no menu to hide
+    assert agreed.menu_hidden[-1] is False
+    gabi.dock.set_floating(False)
+    gabi.toggle_focus()
+    assert agreed.menu_hidden[-1] is False and not gabi.dock.is_focused
+
+
+def test_the_focus_mode_is_taken_back_on_the_next_run_and_freed_on_close(
+    agreed,
+) -> None:
+    agreed.settings.assistant_panel = {"focus": True}
+    gabi = agreed.make()
+    assert gabi.dock.is_focused and not agreed.menu_hidden  # closed: the menu stays
+
+    gabi.open()
+    assert agreed.menu_hidden[-1] is True
+    gabi.close()
+    assert agreed.menu_hidden[-1] is False
+
+
+def test_a_new_session_starts_from_nothing_and_forgets_nothing_else(agreed) -> None:
+    gabi = agreed.make()
+    gabi.new_session()  # nothing open: nothing to do
+    assert gabi.tab is None
+
+    gabi.open()
+    first = gabi.tab
+    assert first is not None
+    first.note("a note")
+    first.changed.emit()
+    assert gabi.history.entries("prod")
+    other = agreed.context
+    gabi.history.set("dev", [("user", "keep me")])
+
+    gabi.new_session()
+
+    assert gabi.tab is not None and gabi.tab is not first
+    assert gabi.history.entries(other) == []
+    assert gabi.history.entries("dev") == [("user", "keep me")]
+    assert gabi.dock.is_open
+
+
+def test_the_header_tells_the_tokens_of_the_session(agreed) -> None:
+    from kubescope.gabi.usage import Usage
+
+    gabi = agreed.make()
+    gabi.show_usage()
+    assert gabi.dock.panel.usage.isHidden()
+
+    gabi.open()
+    assert gabi.dock.panel.usage.isHidden()  # nothing was used yet
+    session = gabi.tab.session
+    session.usage = Usage(10, 2000, 90, 0, 0.0123)
+    session.last_usage = Usage(5, 1000, 45, 0, 0.0123)
+    gabi.tab.usage_changed.emit()
+
+    panel = gabi.dock.panel
+    assert panel.usage.text() == "100 in · 2.0k out · 90% cached"
+    assert "Read from the cache: 90" in panel.usage.toolTip()
+    assert "Cost: $0.0123" in panel.usage.toolTip()
+
+    session.usage = Usage(10, 2, 0, 0, None)
+    gabi.show_usage()
+    assert "Cost" not in panel.usage.toolTip()

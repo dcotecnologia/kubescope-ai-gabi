@@ -32,6 +32,7 @@ from kubescope.gabi.runner import (
 from kubescope.gabi.session import ChatSession
 from kubescope.gabi.settings import GabiSettings
 from kubescope.gabi.tab import AssistantTab
+from kubescope.gabi.usage import Usage, compact
 
 
 @dataclass
@@ -51,6 +52,7 @@ class GabiPort:
     style_box: Callable[[QMessageBox], None]  # the window's own buttons
     show_settings: Callable[[], None]  # the Settings, on the section of Gabi
     reserve_corner: Callable[[int], None]  # keep this many pixels of the corner clear
+    hide_side_menu: Callable[[bool], None]  # hide the side menu, or give it back
     history_path: Path  # where the conversations are kept
 
 
@@ -66,13 +68,16 @@ class GabiController(QObject):
         self._switching = False  # the assistant itself changes the context
         self.dock = AssistantDock(port.central)
         self.dock.bubble.clicked.connect(self.toggle)
-        self.dock.panel.closed.connect(self.dock.close)
+        self.dock.panel.closed.connect(self._put_away)
+        self.dock.panel.new_session_requested.connect(self.new_session)
+        self.dock.panel.focus_requested.connect(self.toggle_focus)
         self.dock.panel.clear_requested.connect(self.clear_chat)
         self.dock.panel.settings_requested.connect(port.show_settings)
         self.dock.bubble.setVisible(port.settings.assistant_enabled)
         self.make_room()
         self.dock.restore(port.settings.assistant_panel)
         self.dock.state_changed.connect(self._keep_panel)
+        self.dock.state_changed.connect(self._sync_focus)
 
     def sync_choices(self) -> None:
         """Tell the runner the model and the effort of each assistant: the ones
@@ -110,7 +115,7 @@ class GabiController(QObject):
         self.dock.bubble.setVisible(enabled)
         self.make_room()
         if not enabled:
-            self.dock.close()
+            self._put_away()
         self.show_engine()
 
     def restyle(self) -> None:
@@ -133,13 +138,14 @@ class GabiController(QObject):
             and not self._switching
         ):
             self.end_chat()
-            self.dock.close()
+            self._put_away()
 
     def close(self) -> None:
         """The extension was unloaded: stop what the chat runs and take Gabi
         out of the window."""
         self.end_chat()
         self.dock.dispose()
+        self.port.hide_side_menu(False)
         self.port.reserve_corner(0)
 
     def shutdown(self) -> None:
@@ -190,7 +196,7 @@ class GabiController(QObject):
         tab = self.tab
         if self.dock.is_open and tab is not None:
             if tab.input.hasFocus():
-                self.dock.close()
+                self._put_away()
                 return
         else:
             self.open()
@@ -202,9 +208,65 @@ class GabiController(QObject):
     def toggle(self) -> None:
         """The button of the corner: open the chat, or put it away."""
         if self.dock.is_open:
-            self.dock.close()
+            self._put_away()
         else:
             self.open()
+
+    def _put_away(self) -> None:
+        """Close the chat; with it goes the focus mode, which hid the side
+        menu."""
+        self.dock.close()
+        self._sync_focus()
+
+    def _sync_focus(self) -> None:
+        """The side menu is hidden while the chat is open in the window and in
+        the focus mode."""
+        dock = self.dock
+        self.port.hide_side_menu(
+            dock.is_open and dock.is_focused and not dock.is_floating
+        )
+
+    def toggle_focus(self) -> None:
+        """The focus mode: the chat takes the whole window, with the side menu
+        out of the way."""
+        self.dock.set_focus(not self.dock.is_focused)
+
+    def new_session(self) -> None:
+        """Start a conversation from nothing in this context, as a new session
+        of the chat does."""
+        if self.tab is None:
+            return
+        self.end_chat()
+        self.history.clear(self.port.context())
+        if self.dock.is_open:
+            self.open()
+
+    def show_usage(self) -> None:
+        """Keep the header telling what the conversation used in tokens."""
+        tab = self.tab
+        used = tab.session.usage if tab is not None else Usage()
+        if tab is None or not used:
+            self.dock.panel.set_usage("")
+            return
+        text = self.tr("{context} in · {output} out · {cache}% cached").format(
+            context=compact(used.context),
+            output=compact(used.output_tokens),
+            cache=round(used.cache_hit * 100),
+        )
+        last = tab.session.last_usage
+        lines = [
+            self.tr("Tokens of this session"),
+            self.tr("Input: {n}").format(n=used.input_tokens),
+            self.tr("Output: {n}").format(n=used.output_tokens),
+            self.tr("Read from the cache: {n}").format(n=used.cache_read),
+            self.tr("Written to the cache: {n}").format(n=used.cache_write),
+            self.tr("Last answer: {context} in, {output} out").format(
+                context=last.context, output=last.output_tokens
+            ),
+        ]
+        if used.cost is not None:
+            lines.append(self.tr("Cost: ${cost}").format(cost=f"{used.cost:.4f}"))
+        self.dock.panel.set_usage(text, "\n".join(lines))
 
     def open(self) -> None:
         """Open the chat with the assistant of the system, for this context."""
@@ -235,12 +297,15 @@ class GabiController(QObject):
             tab.debug_report = self.debug_report
             tab.kube_requested.connect(lambda: self._kube_report(tab))
             tab.changed.connect(lambda: self._keep_chat(tab))
+            tab.usage_changed.connect(self.show_usage)
             tab.navigate.connect(lambda request: self._navigate(tab, request))
             tab.write.connect(lambda request: self._write(tab, request))
             self.tab = tab
             self.dock.panel.show_chat(tab)
             self.show_engine()
         self.dock.open()
+        self._sync_focus()
+        self.show_usage()
         tab.input.setFocus()
 
     def engine(self, assistant: Assistant, model: str | None) -> str:
@@ -355,6 +420,7 @@ class GabiController(QObject):
         tab, self.tab = self.tab, None
         self.dock.panel.show_chat(None)
         self.dock.panel.set_engine("")
+        self.dock.panel.set_usage("")
         if tab is not None:
             tab.shutdown()
             tab.deleteLater()

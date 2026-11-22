@@ -276,6 +276,7 @@ class AssistantTab(QWidget):
     write = Signal(object)  # a Request the person confirmed
     kube_requested = Signal()  # the person typed /kube: the window reads it
     changed = Signal()  # the conversation has a new entry to keep
+    usage_changed = Signal()  # an answer came: the tokens of the session grew
 
     def __init__(
         self,
@@ -868,6 +869,7 @@ class AssistantTab(QWidget):
             self._act_on(answer)
         if not self._failed:
             self.changed.emit()
+            self.usage_changed.emit()
         if self._reader is None:
             self._set_busy(False)
 

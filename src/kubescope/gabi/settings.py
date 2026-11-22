@@ -89,6 +89,8 @@ class GabiSettings:
                 kept[key] = number
         if stored.get("floating") is True:
             kept["floating"] = True
+        if stored.get("focus") is True:
+            kept["focus"] = True
         geometry = stored.get("geometry")
         if isinstance(geometry, str) and geometry.isascii() and len(geometry) < 4096:
             kept["geometry"] = geometry

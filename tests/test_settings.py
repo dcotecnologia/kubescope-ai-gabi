@@ -94,3 +94,11 @@ def test_the_size_the_floating_and_the_place_of_the_panel_are_kept() -> None:
         "floating": True,
         "geometry": "AAAA",
     }
+
+
+def test_the_focus_mode_is_kept_only_when_it_is_on() -> None:
+    settings = GabiSettings(Store())
+    settings.assistant_panel = {"focus": True, "width": 400}
+    assert settings.assistant_panel == {"width": 400, "focus": True}
+    settings.assistant_panel = {"focus": "yes"}
+    assert settings.assistant_panel == {}
