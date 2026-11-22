@@ -337,3 +337,11 @@ def test_while_the_chat_is_the_page_the_window_may_be_made_smaller(window) -> No
     extension._smaller_window(window, False)
     extension._smaller_window(window, False)
     assert window.minimumSize() == usual
+
+
+def test_the_manifest_says_the_oldest_kubescope_she_works_with() -> None:
+    import tomllib
+
+    manifest = tomllib.loads((ROOT / "kubescope-extension.toml").read_text("utf-8"))
+
+    assert manifest["min_app"] == "2.4.0"  # the focus mode needs the window of 2.4.0
