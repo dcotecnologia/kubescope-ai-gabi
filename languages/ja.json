@@ -5,7 +5,7 @@
         "AssistantPanel": {
             "Clear history": "履歴を消去",
             "Close": "閉じる",
-            "Focus mode: the chat fills the window": "フォーカスモード: チャットがウィンドウ全体に広がります",
+            "Focus mode: the chat fills the page": "フォーカスモード: チャットがページ全体に広がります",
             "Leave the focus mode": "フォーカスモードを終了",
             "New session": "新しいセッション",
             "Open in a window of its own": "別ウィンドウで開く",
@@ -62,6 +62,10 @@
             "{context} in · {output} out · {cache}% cached": "入力 {context} · 出力 {output} · キャッシュ {cache}%",
             "{name} guide": "{name}ガイド",
             "{name} needs Claude Code or Codex.": "{name} には Claude Code または Codex が必要です。"
+        },
+        "GabiSettingsPanel": {
+            "Focus mode: the chat fills the page": "フォーカスモード: チャットがページ全体に広がります",
+            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "チャットを開いている間、サイドメニューとページの代わりに表示されます。トップバーとフッターはそのままです。"
         }
     }
 }

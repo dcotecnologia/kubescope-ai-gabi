@@ -50,8 +50,9 @@ class Setup:
         )
         self.panel.load()
 
-    def apply(self, enabled, assistant, programs, models, efforts) -> None:
+    def apply(self, enabled, assistant, programs, models, efforts, focus) -> None:
         self.applied.append((enabled, assistant, programs, models, efforts))
+        self.settings.focus_mode = focus
         self.settings.assistant_enabled = enabled
         self.settings.assistant = assistant
         self.settings.assistant_programs = programs
@@ -218,3 +219,14 @@ def test_the_panel_explains_where_the_conversations_and_the_credentials_go(
     assert "asks you for no credentials and stores none" in text
     assert "kept on this computer" in text
     assert isinstance(setup.panel, QWidget)
+
+
+def test_the_focus_mode_is_shown_and_saved_with_the_rest(setup) -> None:
+    assert setup.panel.focus.isChecked() is False
+
+    setup.panel.focus.setChecked(True)
+    assert setup.panel.save()
+
+    assert setup.settings.focus_mode is True
+    setup.panel.load()
+    assert setup.panel.focus.isChecked() is True

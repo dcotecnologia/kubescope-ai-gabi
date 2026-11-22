@@ -77,6 +77,17 @@ class GabiSettings:
         self._store.set("programs", dict(value))
 
     @property
+    def focus_mode(self) -> bool:
+        """Whether the chat fills the page between the header and the footer of
+        the window, in place of the corner panel; off unless the person turned
+        it on."""
+        return self._store.get("focus", False) is True
+
+    @focus_mode.setter
+    def focus_mode(self, value: bool) -> None:
+        self._store.set("focus", bool(value))
+
+    @property
     def assistant_panel(self) -> dict[str, Any]:
         """The size of the chat panel, whether it is out of the window and
         where; what cannot be read is left out."""
@@ -89,8 +100,6 @@ class GabiSettings:
                 kept[key] = number
         if stored.get("floating") is True:
             kept["floating"] = True
-        if stored.get("focus") is True:
-            kept["focus"] = True
         geometry = stored.get("geometry")
         if isinstance(geometry, str) and geometry.isascii() and len(geometry) < 4096:
             kept["geometry"] = geometry

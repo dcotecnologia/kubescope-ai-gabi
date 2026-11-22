@@ -5,7 +5,7 @@
         "AssistantPanel": {
             "Clear history": "Geçmişi temizle",
             "Close": "Kapat",
-            "Focus mode: the chat fills the window": "Odak modu: sohbet pencereyi kaplar",
+            "Focus mode: the chat fills the page": "Odak modu: sohbet sayfayı kaplar",
             "Leave the focus mode": "Odak modundan çık",
             "New session": "Yeni oturum",
             "Open in a window of its own": "Ayrı bir pencerede aç",
@@ -62,6 +62,10 @@
             "{context} in · {output} out · {cache}% cached": "{context} girdi · {output} çıktı · %{cache} önbellekten",
             "{name} guide": "{name} kılavuzu",
             "{name} needs Claude Code or Codex.": "{name} için Claude Code veya Codex gerekir."
+        },
+        "GabiSettingsPanel": {
+            "Focus mode: the chat fills the page": "Odak modu: sohbet sayfayı kaplar",
+            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "Sohbet açıkken yan menünün ve sayfaların yerini alır; üst çubuk ve alt bilgi kalır."
         }
     }
 }

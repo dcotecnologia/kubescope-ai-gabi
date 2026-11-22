@@ -62,6 +62,7 @@ class Setup:
             ),
             reserve_corner=self.corners.append,
             hide_side_menu=self.menu_hidden.append,
+            content_area=lambda: (0, 40, 900, 500),
             history_path=tmp_path / "history.json",
         )
 
@@ -555,9 +556,8 @@ def test_the_focus_mode_fills_the_window_and_hides_the_side_menu_while_open(
 
     gabi.toggle_focus()
     assert gabi.dock.is_focused and agreed.menu_hidden[-1] is True
-    host = gabi.dock.host
-    assert gabi.dock.panel.geometry().size() == host.size()
-    assert agreed.settings.assistant_panel["focus"] is True
+    assert gabi.dock.panel.geometry().getRect() == (0, 40, 900, 500)  # the pages
+    assert agreed.settings.focus_mode is True
 
     gabi.toggle()  # put away: the menu comes back, the mode is kept
     assert agreed.menu_hidden[-1] is False and gabi.dock.is_focused
@@ -574,7 +574,7 @@ def test_the_focus_mode_fills_the_window_and_hides_the_side_menu_while_open(
 def test_the_focus_mode_is_taken_back_on_the_next_run_and_freed_on_close(
     agreed,
 ) -> None:
-    agreed.settings.assistant_panel = {"focus": True}
+    agreed.settings.focus_mode = True
     gabi = agreed.make()
     assert gabi.dock.is_focused and not agreed.menu_hidden  # closed: the menu stays
 
@@ -628,3 +628,15 @@ def test_the_header_tells_the_tokens_of_the_session(agreed) -> None:
     session.usage = Usage(10, 2, 0, 0, None)
     gabi.show_usage()
     assert "Cost" not in panel.usage.toolTip()
+
+
+def test_applying_the_settings_turns_the_focus_mode_on_and_off(agreed) -> None:
+    gabi = agreed.make()
+    gabi.open()
+
+    gabi.apply_settings(True, "", {}, {}, {}, True)
+    assert agreed.settings.focus_mode and gabi.dock.is_focused
+    assert agreed.menu_hidden[-1] is True
+
+    gabi.apply_settings(True, "", {}, {}, {}, False)
+    assert not agreed.settings.focus_mode and not gabi.dock.is_focused

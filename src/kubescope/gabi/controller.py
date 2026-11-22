@@ -53,6 +53,7 @@ class GabiPort:
     show_settings: Callable[[], None]  # the Settings, on the section of Gabi
     reserve_corner: Callable[[int], None]  # keep this many pixels of the corner clear
     hide_side_menu: Callable[[bool], None]  # hide the side menu, or give it back
+    content_area: Callable[[], tuple[int, int, int, int]]  # where the pages are
     history_path: Path  # where the conversations are kept
 
 
@@ -76,6 +77,8 @@ class GabiController(QObject):
         self.dock.bubble.setVisible(port.settings.assistant_enabled)
         self.make_room()
         self.dock.restore(port.settings.assistant_panel)
+        self.dock.content_area = port.content_area
+        self.dock.set_focus(port.settings.focus_mode)
         self.dock.state_changed.connect(self._keep_panel)
         self.dock.state_changed.connect(self._sync_focus)
 
@@ -100,6 +103,7 @@ class GabiController(QObject):
         programs: dict[str, str],
         models: dict[str, str],
         efforts: dict[str, str],
+        focus: bool = False,
     ) -> None:
         """Keep the settings of the assistant and make the window follow
         them."""
@@ -112,6 +116,8 @@ class GabiController(QObject):
         self.sync_choices()
         settings.assistant_enabled = enabled
         settings.assistant = assistant
+        settings.focus_mode = focus
+        self.dock.set_focus(focus)
         self.dock.bubble.setVisible(enabled)
         self.make_room()
         if not enabled:
@@ -229,7 +235,8 @@ class GabiController(QObject):
     def toggle_focus(self) -> None:
         """The focus mode: the chat takes the whole window, with the side menu
         out of the way."""
-        self.dock.set_focus(not self.dock.is_focused)
+        self.port.settings.focus_mode = not self.dock.is_focused
+        self.dock.set_focus(self.port.settings.focus_mode)
 
     def new_session(self) -> None:
         """Start a conversation from nothing in this context, as a new session

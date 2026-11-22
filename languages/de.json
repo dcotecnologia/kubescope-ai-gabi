@@ -5,7 +5,7 @@
         "AssistantPanel": {
             "Clear history": "Verlauf löschen",
             "Close": "Schließen",
-            "Focus mode: the chat fills the window": "Fokusmodus: Der Chat füllt das Fenster",
+            "Focus mode: the chat fills the page": "Fokusmodus: Der Chat füllt die Seite",
             "Leave the focus mode": "Fokusmodus beenden",
             "New session": "Neue Sitzung",
             "Open in a window of its own": "In eigenem Fenster öffnen",
@@ -62,6 +62,10 @@
             "{context} in · {output} out · {cache}% cached": "{context} Eingabe · {output} Ausgabe · {cache} % im Cache",
             "{name} guide": "{name}-Leitfaden",
             "{name} needs Claude Code or Codex.": "{name} benötigt Claude Code oder Codex."
+        },
+        "GabiSettingsPanel": {
+            "Focus mode: the chat fills the page": "Fokusmodus: Der Chat füllt die Seite",
+            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "Bei geöffnetem Chat ersetzt er das Seitenmenü und die Seiten; Kopfleiste und Fußzeile bleiben."
         }
     }
 }

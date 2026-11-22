@@ -5,7 +5,7 @@
         "AssistantPanel": {
             "Clear history": "پاک کردن تاریخچه",
             "Close": "بستن",
-            "Focus mode: the chat fills the window": "حالت تمرکز: گفتگو کل پنجره را پر می‌کند",
+            "Focus mode: the chat fills the page": "حالت تمرکز: گفتگو کل صفحه را پر می‌کند",
             "Leave the focus mode": "خروج از حالت تمرکز",
             "New session": "نشست جدید",
             "Open in a window of its own": "باز کردن در پنجره‌ای جداگانه",
@@ -62,6 +62,10 @@
             "{context} in · {output} out · {cache}% cached": "{context} ورودی · {output} خروجی · {cache}٪ از حافظه نهان",
             "{name} guide": "راهنمای {name}",
             "{name} needs Claude Code or Codex.": "{name} به Claude Code یا Codex نیاز دارد."
+        },
+        "GabiSettingsPanel": {
+            "Focus mode: the chat fills the page": "حالت تمرکز: گفتگو کل صفحه را پر می‌کند",
+            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "تا وقتی گفتگو باز است، جای منوی کناری و صفحه‌ها را می‌گیرد؛ نوار بالا و پایین‌صفحه می‌مانند."
         }
     }
 }
