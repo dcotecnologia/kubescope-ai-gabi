@@ -1,6 +1,6 @@
 [project]
 name = "kubescope-gabi"
-version = "1.0.1"
+version = "1.1.0"
 description = "Gabi, the assistant of KubeScope: ask about your cluster from a coding assistant installed on your computer"
 readme = "README.md"
 license = "MIT"
@@ -10,7 +10,7 @@ requires-python = ">=3.15,<3.16"
 # so): the app gives her what she needs when it runs her. Qt is what her chat is
 # drawn with.
 dependencies = [
-    "kubescope-sdk>=1.0.0,<2.0.0",
+    "kubescope-sdk>=1.4.0,<2.0.0",
 ]
 
 [build-system]
