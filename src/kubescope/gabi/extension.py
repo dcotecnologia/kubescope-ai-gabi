@@ -17,6 +17,7 @@ from kubescope.sdk import (
     WRITE_MODE_CHANGED,
     Context,
 )
+from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QMessageBox
 
 from kubescope.gabi import cli, services
@@ -67,6 +68,7 @@ def _in_the_window(ctx: Context, settings: GabiSettings) -> None:
             reserve_corner=lambda pixels: ui.reserve_corner(ctx.id, pixels),
             hide_side_menu=lambda hidden: ui.hide_side_menu(ctx.id, hidden),
             content_area=lambda: ui.content_area(),
+            smaller_window=lambda smaller: _smaller_window(ui.window, smaller),
             history_path=ctx.data_directory / "history.json",
         )
     )
@@ -94,6 +96,20 @@ def _in_the_window(ctx: Context, settings: GabiSettings) -> None:
     )
     ctx.on_unload(lambda: controller.close())
     ctx.on_unload(lambda: setattr(services, "controller", None))
+
+
+_USUAL_MINIMUM: list[QSize] = []  # the least the window asked, while it is let go
+
+
+def _smaller_window(window: Any, smaller: bool) -> None:
+    """A page of chat has no need of the width of a list: while it fills the
+    window, the window may be made as small as its layout allows, and it goes
+    back to the least it asked when the page is gone."""
+    if smaller and not _USUAL_MINIMUM:
+        _USUAL_MINIMUM.append(window.minimumSize())
+        window.setMinimumSize(QSize(0, 0))
+    elif not smaller and _USUAL_MINIMUM:
+        window.setMinimumSize(_USUAL_MINIMUM.pop())
 
 
 def _language_changed(controller: GabiController) -> Any:

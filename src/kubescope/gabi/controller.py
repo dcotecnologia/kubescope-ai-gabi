@@ -32,7 +32,7 @@ from kubescope.gabi.runner import (
 from kubescope.gabi.session import ChatSession
 from kubescope.gabi.settings import GabiSettings
 from kubescope.gabi.tab import AssistantTab
-from kubescope.gabi.usage import Usage, compact
+from kubescope.gabi.usage import compact
 
 
 @dataclass
@@ -54,6 +54,7 @@ class GabiPort:
     reserve_corner: Callable[[int], None]  # keep this many pixels of the corner clear
     hide_side_menu: Callable[[bool], None]  # hide the side menu, or give it back
     content_area: Callable[[], tuple[int, int, int, int]]  # where the pages are
+    smaller_window: Callable[[bool], None]  # let the window be made smaller, or not
     history_path: Path  # where the conversations are kept
 
 
@@ -124,6 +125,7 @@ class GabiController(QObject):
         if not enabled:
             self._put_away()
         self.ensure_focus()
+        self._sync_focus()
         self.show_engine()
 
     def restyle(self) -> None:
@@ -163,6 +165,7 @@ class GabiController(QObject):
         self.end_chat()
         self.dock.dispose()
         self.port.hide_side_menu(False)
+        self.port.smaller_window(False)
         self.port.reserve_corner(0)
 
     def shutdown(self) -> None:
@@ -239,9 +242,12 @@ class GabiController(QObject):
         """The side menu is hidden while the chat is open in the window and in
         the focus mode."""
         dock = self.dock
-        self.port.hide_side_menu(
-            dock.is_open and dock.is_focused and not dock.is_floating
-        )
+        page = dock.is_open and dock.is_focused and not dock.is_floating
+        self.port.hide_side_menu(page)
+        self.port.smaller_window(page)  # a chat has no need of the width of a list
+        # the page is open for good: there is no button to open it
+        self.dock.bubble.setVisible(self.port.settings.assistant_enabled and not page)
+        self.show_usage()
 
     def toggle_focus(self) -> None:
         """The focus mode: the chat takes the whole window, with the side menu
@@ -264,10 +270,10 @@ class GabiController(QObject):
     def show_usage(self) -> None:
         """Keep the header telling what the conversation used in tokens."""
         tab = self.tab
-        used = tab.session.usage if tab is not None else Usage()
-        if tab is None or not used:
+        if tab is None:
             self.dock.panel.set_usage("")
             return
+        used = tab.session.usage
         text = self.tr("{context} in · {output} out · {cache}% cached").format(
             context=compact(used.context),
             output=compact(used.output_tokens),
@@ -286,7 +292,9 @@ class GabiController(QObject):
         ]
         if used.cost is not None:
             lines.append(self.tr("Cost: ${cost}").format(cost=f"{used.cost:.4f}"))
-        self.dock.panel.set_usage(text, "\n".join(lines))
+        tip = "\n".join(lines)
+        self.dock.panel.set_usage(text, tip)
+        tab.set_usage(text, tip, self.dock.is_focused)  # in the focus mode, here
 
     def open(self, quiet: bool = False) -> None:
         """Open the chat with the assistant of the system, for this context.

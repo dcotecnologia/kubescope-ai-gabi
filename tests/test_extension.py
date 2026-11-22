@@ -319,3 +319,16 @@ def test_the_button_of_the_section_forgets_the_conversations(
     entry.panel.clear_button.click()
 
     assert cleared == [1]
+
+
+def test_while_the_chat_is_the_page_the_window_may_be_made_smaller(window) -> None:
+    usual = window.minimumSize()
+    assert usual.width() > 0
+
+    extension._smaller_window(window, True)
+    extension._smaller_window(window, True)  # once is enough
+    assert window.minimumSize().width() == 0
+
+    extension._smaller_window(window, False)
+    extension._smaller_window(window, False)
+    assert window.minimumSize() == usual
