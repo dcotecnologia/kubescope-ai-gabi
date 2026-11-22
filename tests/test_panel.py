@@ -423,5 +423,8 @@ def test_the_focus_mode_fills_the_host_and_is_kept_in_the_state() -> None:
     dock.place()
     assert dock.panel.geometry().getRect() == (0, 50, 800, 400)
 
+    assert "border-radius: 10px" not in dock.panel.styleSheet()  # a page, not a card
+
     dock.set_focus(False)
     assert not dock.is_focused and dock.panel.geometry().width() < 800
+    assert "border-radius: 10px" in dock.panel.styleSheet()

@@ -61,8 +61,28 @@ def _bubble_style() -> str:
     )
 
 
-def _panel_style() -> str:
-    """The panel and its header, in the colors of the theme."""
+def _panel_style(focused: bool = False) -> str:
+    """The panel and its header, in the colors of the theme; in the focus mode
+    it is a page of the app, with the look of the pages and their header."""
+    if focused:
+        edge = themed("#e1e3e9")
+        ink = themed("#20232a", text=True)
+        return (
+            f"QFrame#assistantPanel {{ background: {themed('#f7f7fa')}; border: 0; }}"
+            f"QFrame#assistantHeader {{ background: {themed('#ffffff')};"
+            f" border-bottom: 1px solid {themed('#e4e5eb')}; }}"
+            f"QFrame#assistantHeader QLabel {{ background: transparent;"
+            f" color: {themed('#17191e', text=True)};"
+            " font-size: 16px; font-weight: 700; }"
+            "QFrame#assistantHeader QLabel#assistantEngine "
+            f"{{ color: {themed('#7b8089', text=True)}; font-weight: 400;"
+            " font-size: 12px; }"
+            "QFrame#assistantHeader QPushButton "
+            f"{{ background: transparent; color: {ink};"
+            f" border: 1px solid {edge}; border-radius: 6px; padding: 2px 8px; }}"
+            "QFrame#assistantHeader QPushButton:hover "
+            f"{{ background: {themed('#f3f4f7')}; }}"
+        )
     border = themed("#e1e3e9")
     header = themed("#0d315d")
     ink = themed("#ffffff", text=True)
@@ -133,6 +153,7 @@ class AssistantPanel(QFrame):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
         self.setObjectName("assistantPanel")
+        self._focused = False
         self.restyle()
         header = QFrame()
         header.setObjectName("assistantHeader")
@@ -187,18 +208,18 @@ class AssistantPanel(QFrame):
         for handle in self.handles:
             handle.dragged.connect(self.dragged)
             handle.released.connect(self.released)
-        self._focused = False
         self.set_floating(False)
         self.retranslate()
         self.hide()
 
     def set_focused(self, focused: bool) -> None:
-        """In the focus mode the chat fills the window, so nothing is left to
-        drag."""
+        """In the focus mode the chat is a page of the app, so nothing is left
+        to drag."""
         self._focused = focused
         for handle in self.handles:
             handle.setVisible(not focused and not self._floating)
-        self.retranslate()
+        self.close_button.setVisible(not focused)  # the page is not put away
+        self.restyle()
 
     def set_floating(self, floating: bool) -> None:
         """Out of the window the system resizes it; in it, the borders do."""
@@ -206,9 +227,7 @@ class AssistantPanel(QFrame):
             handle.setVisible(not floating and not self._focused)
         self.focus_button.setVisible(not floating)
         self.float_button.setIcon(
-            dock_icon(themed("#ffffff", text=True))
-            if floating
-            else popout_icon(themed("#ffffff", text=True))
+            dock_icon(self._ink()) if floating else popout_icon(self._ink())
         )
         self.float_button.setToolTip(
             self.tr("Put it back in the window")
@@ -227,16 +246,23 @@ class AssistantPanel(QFrame):
         for handle in self.handles:
             handle.raise_()
 
+    def _ink(self) -> str:
+        """The color of the icons of the header: dark on the light header of
+        the focus mode, white on the blue one of the corner panel."""
+        if self._focused:
+            return themed("#20232a", text=True)
+        return themed("#ffffff", text=True)
+
     def restyle(self) -> None:
         """Take the colors of the theme in use."""
-        self.setStyleSheet(_panel_style())
+        self.setStyleSheet(_panel_style(self._focused))
         if hasattr(self, "float_button"):
             self.set_floating(self._floating)
             self.retranslate()
 
     def retranslate(self) -> None:
         """The two buttons that are only an icon say their words as a tip."""
-        color = themed("#ffffff", text=True)
+        color = self._ink()
         icon_only(self.settings_button, self.tr("Settings"), gear_icon(color))
         icon_only(self.clear_button, self.tr("Clear history"), trash_icon(color))
         icon_only(self.close_button, self.tr("Close"), close_icon(color))

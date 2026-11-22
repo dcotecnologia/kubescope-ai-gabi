@@ -81,6 +81,7 @@ class GabiController(QObject):
         self.dock.set_focus(port.settings.focus_mode)
         self.dock.state_changed.connect(self._keep_panel)
         self.dock.state_changed.connect(self._sync_focus)
+        self.ensure_focus()
 
     def sync_choices(self) -> None:
         """Tell the runner the model and the effort of each assistant: the ones
@@ -122,6 +123,7 @@ class GabiController(QObject):
         self.make_room()
         if not enabled:
             self._put_away()
+        self.ensure_focus()
         self.show_engine()
 
     def restyle(self) -> None:
@@ -145,6 +147,15 @@ class GabiController(QObject):
         ):
             self.end_chat()
             self._put_away()
+        self.ensure_focus()
+
+    def ensure_focus(self) -> None:
+        """In the focus mode the chat is not opened and closed: it is the page,
+        so it is open whenever it can be."""
+        dock = self.dock
+        enabled = self.port.settings.assistant_enabled
+        if enabled and dock.is_focused and not dock.is_floating and not dock.is_open:
+            self.open(quiet=True)
 
     def close(self) -> None:
         """The extension was unloaded: stop what the chat runs and take Gabi
@@ -201,7 +212,7 @@ class GabiController(QObject):
             return
         tab = self.tab
         if self.dock.is_open and tab is not None:
-            if tab.input.hasFocus():
+            if tab.input.hasFocus() and not self.dock.is_focused:
                 self._put_away()
                 return
         else:
@@ -237,6 +248,8 @@ class GabiController(QObject):
         out of the way."""
         self.port.settings.focus_mode = not self.dock.is_focused
         self.dock.set_focus(self.port.settings.focus_mode)
+        if self.dock.is_focused and not self.dock.is_open:
+            self.open()
 
     def new_session(self) -> None:
         """Start a conversation from nothing in this context, as a new session
@@ -275,21 +288,36 @@ class GabiController(QObject):
             lines.append(self.tr("Cost: ${cost}").format(cost=f"{used.cost:.4f}"))
         self.dock.panel.set_usage(text, "\n".join(lines))
 
-    def open(self) -> None:
-        """Open the chat with the assistant of the system, for this context."""
+    def open(self, quiet: bool = False) -> None:
+        """Open the chat with the assistant of the system, for this context.
+
+        `quiet` is for what the app does on its own: when something is
+        missing (a program, a context, the agreement) it opens nothing
+        and says nothing.
+        """
         assistant = self.program()
         if assistant is None:
-            self._guide_setup()
+            if not quiet:
+                self._guide_setup()
             return
         if not self.port.context():
-            self.port.show_message(
-                QMessageBox.Icon.Information,
-                self.tr("Assistant"),
-                self.tr("Choose a context first."),
-            )
+            if not quiet:
+                self._no_context()
             return
-        if not self.port.settings.assistant_consent and not self._consent(assistant):
+        if not self.port.settings.assistant_consent and (
+            quiet or not self._consent(assistant)
+        ):
             return
+        self._open_chat(assistant)
+
+    def _no_context(self) -> None:
+        self.port.show_message(
+            QMessageBox.Icon.Information,
+            self.tr("Assistant"),
+            self.tr("Choose a context first."),
+        )
+
+    def _open_chat(self, assistant: Assistant) -> None:
         tab = self.tab
         if tab is None:
             session = ChatSession(assistant, system=self._system())

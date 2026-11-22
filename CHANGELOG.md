@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
-- Gabi has a focus mode: while the chat is open it takes the place of the side menu and the pages, and the top bar and the footer stay; it is set in the header of the chat or in the Settings of Gabi, and kept by @danilogco
+- Gabi has a focus mode: while the chat is open it takes the place of the side menu and the pages, and the top bar and the footer stay; the chat is always open, with the look of the pages of the app; it is set in the header of the chat or in the Settings of Gabi, and kept by @danilogco
 - A new session button in the header of the chat starts the conversation of the context from nothing by @danilogco
 - The header shows the tokens of the session (input, output and the share read from the cache), and its tip tells the cache reads and writes, the last answer and the cost, for Claude Code and Codex by @danilogco
 
