@@ -5,7 +5,7 @@
         "AssistantPanel": {
             "Clear history": "Hapus riwayat",
             "Close": "Tutup",
-            "Focus mode: the chat fills the window": "Mode fokus: obrolan memenuhi jendela",
+            "Focus mode: the chat fills the page": "Mode fokus: obrolan memenuhi halaman",
             "Leave the focus mode": "Keluar dari mode fokus",
             "New session": "Sesi baru",
             "Open in a window of its own": "Buka di jendela tersendiri",
@@ -62,6 +62,10 @@
             "{context} in · {output} out · {cache}% cached": "{context} masuk · {output} keluar · {cache}% dari cache",
             "{name} guide": "Panduan {name}",
             "{name} needs Claude Code or Codex.": "{name} memerlukan Claude Code atau Codex."
+        },
+        "GabiSettingsPanel": {
+            "Focus mode: the chat fills the page": "Mode fokus: obrolan memenuhi halaman",
+            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "Saat obrolan terbuka, obrolan menggantikan menu samping dan halaman; bilah atas dan footer tetap ada."
         }
     }
 }

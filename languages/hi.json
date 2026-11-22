@@ -5,7 +5,7 @@
         "AssistantPanel": {
             "Clear history": "इतिहास साफ़ करें",
             "Close": "बंद करें",
-            "Focus mode: the chat fills the window": "फ़ोकस मोड: चैट पूरी विंडो में फैल जाती है",
+            "Focus mode: the chat fills the page": "फ़ोकस मोड: चैट पूरे पेज में फैल जाती है",
             "Leave the focus mode": "फ़ोकस मोड से बाहर निकलें",
             "New session": "नया सत्र",
             "Open in a window of its own": "अलग विंडो में खोलें",
@@ -62,6 +62,10 @@
             "{context} in · {output} out · {cache}% cached": "{context} इनपुट · {output} आउटपुट · {cache}% कैश से",
             "{name} guide": "{name} गाइड",
             "{name} needs Claude Code or Codex.": "{name} के लिए Claude Code या Codex आवश्यक है।"
+        },
+        "GabiSettingsPanel": {
+            "Focus mode: the chat fills the page": "फ़ोकस मोड: चैट पूरे पेज में फैल जाती है",
+            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "चैट खुली होने पर वह साइड मेनू और पेजों की जगह ले लेती है; ऊपरी बार और फ़ुटर बने रहते हैं।"
         }
     }
 }

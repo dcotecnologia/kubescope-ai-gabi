@@ -66,6 +66,7 @@ def _in_the_window(ctx: Context, settings: GabiSettings) -> None:
             show_settings=lambda: ui.show_settings(TITLE),
             reserve_corner=lambda pixels: ui.reserve_corner(ctx.id, pixels),
             hide_side_menu=lambda hidden: ui.hide_side_menu(ctx.id, hidden),
+            content_area=lambda: ui.content_area(),
             history_path=ctx.data_directory / "history.json",
         )
     )

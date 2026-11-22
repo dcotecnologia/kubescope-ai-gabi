@@ -418,9 +418,10 @@ def test_the_focus_mode_fills_the_host_and_is_kept_in_the_state() -> None:
 
     assert dock.is_focused and dock.panel.geometry().size() == host.size()
     assert dock.panel.focus_button.toolTip() == "Leave the focus mode"
-    assert dock.state()["focus"] is True
+
+    dock.content_area = lambda: (0, 50, 800, 400)  # between the bars of the window
+    dock.place()
+    assert dock.panel.geometry().getRect() == (0, 50, 800, 400)
 
     dock.set_focus(False)
     assert not dock.is_focused and dock.panel.geometry().width() < 800
-    dock.restore({"focus": True})
-    assert dock.is_focused

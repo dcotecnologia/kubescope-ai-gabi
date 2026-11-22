@@ -5,7 +5,7 @@
         "AssistantPanel": {
             "Clear history": "清除記錄",
             "Close": "關閉",
-            "Focus mode: the chat fills the window": "專注模式：聊天佔滿整個視窗",
+            "Focus mode: the chat fills the page": "專注模式：聊天佔滿頁面",
             "Leave the focus mode": "結束專注模式",
             "New session": "新工作階段",
             "Open in a window of its own": "在獨立視窗中開啟",
@@ -62,6 +62,10 @@
             "{context} in · {output} out · {cache}% cached": "輸入 {context} · 輸出 {output} · 快取 {cache}%",
             "{name} guide": "{name} 指南",
             "{name} needs Claude Code or Codex.": "{name} 需要 Claude Code 或 Codex。"
+        },
+        "GabiSettingsPanel": {
+            "Focus mode: the chat fills the page": "專注模式：聊天佔滿頁面",
+            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "聊天開啟時，會取代側邊選單與頁面；頂端列與頁尾保持不變。"
         }
     }
 }

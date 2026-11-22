@@ -26,7 +26,7 @@ from kubescope.gabi.runner import is_available
 from kubescope.gabi.settings import GabiSettings
 
 ApplySettings = Callable[
-    [bool, str, dict[str, str], dict[str, str], dict[str, str]], None
+    [bool, str, dict[str, str], dict[str, str], dict[str, str], bool], None
 ]
 
 
@@ -58,6 +58,15 @@ class GabiSettingsPanel(QWidget):
             )
         )
         layout.addWidget(self.enabled)
+
+        self.focus = QCheckBox(self.tr("Focus mode: the chat fills the page"))
+        self.focus.setToolTip(
+            self.tr(
+                "While the chat is open, it takes the place of the side menu and "
+                "the pages; the top bar and the footer stay."
+            )
+        )
+        layout.addWidget(self.focus)
 
         self.program = QComboBox()
         self.program.setProperty("variant", "filter")
@@ -115,6 +124,7 @@ class GabiSettingsPanel(QWidget):
     def load(self) -> None:
         """Show the preferences as they are saved."""
         self.enabled.setChecked(self.settings.assistant_enabled)
+        self.focus.setChecked(self.settings.focus_mode)
         self._fill_paths()
         self._fill_models()
         self.program.clear()
@@ -261,5 +271,6 @@ class GabiSettingsPanel(QWidget):
                     for key, (_, box) in self._models.items()
                 },
             },
+            self.focus.isChecked(),
         )
         return True

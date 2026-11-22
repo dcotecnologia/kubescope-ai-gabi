@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import Any, cast
 
 from PySide6.QtCore import (
@@ -244,7 +245,7 @@ class AssistantPanel(QFrame):
             self.focus_button,
             self.tr("Leave the focus mode")
             if self._focused
-            else self.tr("Focus mode: the chat fills the window"),
+            else self.tr("Focus mode: the chat fills the page"),
             focus_icon(color, self._focused),
         )
         self.new_button.setFixedWidth(34)
@@ -331,7 +332,10 @@ class AssistantDock(QObject):
         )  # what the person asked for; the window may allow less
         self._drag_start = QSize()
         self._floating = False
-        self._focused = False  # the chat fills the window
+        self._focused = False  # the chat fills the page of the window
+        # where the pages are, as (x, y, width, height) in the host; the host
+        # itself when it is not told
+        self.content_area: Callable[[], tuple[int, int, int, int]] | None = None
         self._frame: FloatingFrame | None = None
         self._geometry = QByteArray()
         self._animation = QParallelAnimationGroup(self)
@@ -393,9 +397,11 @@ class AssistantDock(QObject):
     def _target(self) -> QRect:
         """Where the panel sits when open in the window: over the button, which
         it covers, with its corner on the corner of the button, as large as the
-        person made it and the window allows; in the focus mode, the whole
-        window."""
+        person made it and the window allows; in the focus mode, the page of
+        the window, between its header and its footer."""
         if self._focused:
+            if self.content_area is not None:
+                return QRect(*self.content_area())
             return QRect(0, 0, self.host.width(), self.host.height())
         room = self._room()
         width = min(max(self._size.width(), MIN_PANEL.width()), room.width())
@@ -565,7 +571,6 @@ class AssistantDock(QObject):
             "width": self._size.width(),
             "height": self._size.height(),
             "floating": self._floating,
-            "focus": self._focused,
             "geometry": geometry,
         }
 
@@ -576,9 +581,6 @@ class AssistantDock(QObject):
         )
         geometry = state.get("geometry", "")
         self._geometry = QByteArray.fromBase64(QByteArray(geometry.encode("ascii")))
-        if state.get("focus") is True:
-            self._focused = True
-            self.panel.set_focused(True)
         if state.get("floating") is True and not self._floating:
             self.set_floating(True)
 

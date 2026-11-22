@@ -5,7 +5,7 @@
         "AssistantPanel": {
             "Clear history": "Xóa lịch sử",
             "Close": "Đóng",
-            "Focus mode: the chat fills the window": "Chế độ tập trung: cuộc trò chuyện chiếm toàn bộ cửa sổ",
+            "Focus mode: the chat fills the page": "Chế độ tập trung: cuộc trò chuyện chiếm trang",
             "Leave the focus mode": "Thoát chế độ tập trung",
             "New session": "Phiên mới",
             "Open in a window of its own": "Mở trong cửa sổ riêng",
@@ -62,6 +62,10 @@
             "{context} in · {output} out · {cache}% cached": "{context} đầu vào · {output} đầu ra · {cache}% từ bộ nhớ đệm",
             "{name} guide": "Hướng dẫn {name}",
             "{name} needs Claude Code or Codex.": "{name} cần Claude Code hoặc Codex."
+        },
+        "GabiSettingsPanel": {
+            "Focus mode: the chat fills the page": "Chế độ tập trung: cuộc trò chuyện chiếm trang",
+            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "Khi cuộc trò chuyện mở, nó thay chỗ menu bên và các trang; thanh trên và chân trang vẫn giữ nguyên."
         }
     }
 }
