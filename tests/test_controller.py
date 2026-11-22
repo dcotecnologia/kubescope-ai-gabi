@@ -272,6 +272,32 @@ def test_opening_makes_the_chat_once_and_reuses_it(agreed) -> None:
     assert "Claude" in gabi.dock.panel.engine.text()
 
 
+def test_auto_compacting_is_loaded_and_saved_with_the_chat(agreed) -> None:
+    agreed.settings.auto_compact = False
+    gabi = agreed.make()
+
+    gabi.open()
+
+    assert gabi.tab is not None
+    assert gabi.tab.auto_compact is False
+    gabi.tab._set_auto_compact(True)
+    assert agreed.settings.auto_compact is True
+
+
+def test_the_settings_button_steps_the_focus_page_aside_before_opening(
+    agreed,
+) -> None:
+    gabi = agreed.make()
+    gabi.toggle_focus()
+    panel = gabi.dock.panel
+    assert not panel.isHidden()
+
+    panel.settings_button.click()
+
+    assert agreed.settings_shown == 1
+    assert panel.isHidden() and gabi.dock.is_open
+
+
 def test_the_button_opens_and_puts_the_chat_away(agreed) -> None:
     gabi = agreed.make()
 
@@ -606,7 +632,9 @@ def test_a_new_session_starts_from_nothing_and_forgets_nothing_else(agreed) -> N
     assert gabi.dock.is_open
 
 
-def test_the_tokens_of_the_session_are_under_the_box_of_the_question(agreed) -> None:
+def test_the_tokens_of_the_session_are_under_the_box_of_the_question(
+    agreed, monkeypatch
+) -> None:
     from kubescope.gabi.usage import Usage
 
     gabi = agreed.make()
@@ -628,6 +656,10 @@ def test_the_tokens_of_the_session_are_under_the_box_of_the_question(agreed) -> 
     session.usage = Usage(10, 2, 0, 0, None)
     gabi.show_usage()
     assert "Cost" not in label.toolTip()
+
+    monkeypatch.setattr(gabi.tab.session, "cache_left", lambda: 0)
+    gabi.show_usage()
+    assert label.text() == "10 in · 2 out · cache expired"
 
 
 def test_in_the_focus_mode_there_is_no_button_and_the_tokens_are_under_the_box(

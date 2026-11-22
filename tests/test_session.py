@@ -401,6 +401,18 @@ def test_the_conversation_is_compacted_when_it_is_long(lives) -> None:
     assert plain.needs_compact()
 
 
+def test_the_prompt_cache_counts_down_and_stops_at_zero(monkeypatch) -> None:
+    session = ChatSession(FAKE)
+    session.cache_ttl = 10
+    session.answered_at = 20
+    monkeypatch.setattr(chat, "clock", lambda: 25)
+
+    assert session.cache_left() == 5
+
+    monkeypatch.setattr(chat, "clock", lambda: 35)
+    assert session.cache_left() == 0
+
+
 def test_compacting_stops_the_program_kept_running(lives, monkeypatch) -> None:
     started, plan = lives
     session = ChatSession(LIVE)

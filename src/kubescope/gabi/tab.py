@@ -10,9 +10,11 @@ from PySide6.QtCore import (
     QIODevice,
     QMimeData,
     QPointF,
+    QRectF,
     QSize,
     Qt,
     QThread,
+    QTimer,
     QUrl,
     Signal,
 )
@@ -35,6 +37,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMenu,
     QPlainTextEdit,
     QPushButton,
     QScrollArea,
@@ -219,6 +222,48 @@ class ChatInput(QPlainTextEdit):
             super().insertFromMimeData(source)
 
 
+class ContextRing(QWidget):
+    """A small ring that fills as the conversation grows toward the point where
+    it is compacted; a click asks for its menu."""
+
+    clicked = Signal()
+    SIZE = 18
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.fraction = 0.0
+        self.setFixedSize(self.SIZE, self.SIZE)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def set_fraction(self, fraction: float) -> None:
+        self.fraction = min(max(fraction, 0.0), 1.0)
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        area = QRectF(3, 3, self.SIZE - 6, self.SIZE - 6)
+        track = QColor(themed("#6b7380", text=True))
+        track.setAlpha(80)
+        painter.setPen(QPen(track, 2.0))
+        painter.drawEllipse(area)
+        if self.fraction <= 0:
+            return
+        if self.fraction >= 1.0:
+            color = themed("#a33d45", text=True)  # about to be compacted
+        elif self.fraction >= 0.75:
+            color = themed("#985415", text=True)
+        else:
+            color = themed("#6c5fc4")
+        pen = QPen(QColor(color), 2.0)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen)
+        painter.drawArc(area, 90 * 16, -round(360 * 16 * self.fraction))
+
+    def mouseReleaseEvent(self, event) -> None:
+        self.clicked.emit()
+
+
 class CompactWorker(QThread):
     """Compact the conversation: the assistant summarizes it."""
 
@@ -304,6 +349,7 @@ class AssistantTab(QWidget):
     navigate = Signal(object)  # a Request of the app, to show
     write = Signal(object)  # a Request the person confirmed
     kube_requested = Signal()  # the person typed /kube: the window reads it
+    auto_compact_changed = Signal(bool)  # the person turned it on or off
     changed = Signal()  # the conversation has a new entry to keep
     usage_changed = Signal()  # an answer came: the tokens of the session grew
 
@@ -392,6 +438,13 @@ class AssistantTab(QWidget):
         # the color of the placeholder of the box above it
         self.usage_label.setStyleSheet("QLabel { color: palette(placeholder-text); }")
         self.usage_label.hide()
+        self.ring = ContextRing()
+        self.ring.hide()
+        self.ring.clicked.connect(self._show_context_menu)
+        self.auto_compact = True  # a long conversation is compacted by itself
+        self._cache_timer = QTimer(self)  # tells when the cache of the prompt expires
+        self._cache_timer.setSingleShot(True)
+        self._cache_timer.timeout.connect(self.usage_changed)
         self.send_button.clicked.connect(self.submit)
         self.stop_button.clicked.connect(self.stop)
 
@@ -412,7 +465,12 @@ class AssistantTab(QWidget):
         bar.addWidget(self.chip_bar)
         bar.addWidget(self.status)
         bar.addLayout(row)
-        bar.addWidget(self.usage_label)
+        usage_row = QHBoxLayout()
+        usage_row.setSpacing(6)
+        usage_row.addStretch(1)
+        usage_row.addWidget(self.usage_label)
+        usage_row.addWidget(self.ring)
+        bar.addLayout(usage_row)
         self.composer = composer
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -433,6 +491,52 @@ class AssistantTab(QWidget):
         self.usage_label.setText(text)
         self.usage_label.setToolTip(tip)
         self.usage_label.setVisible(bool(text))
+        self.ring.setVisible(bool(text))
+        self.ring.set_fraction(self.session.context_fraction())
+        self.ring.setToolTip("\n".join(line for line in self._context_lines() if line))
+        left = self.session.cache_left()
+        if left:  # the line is made again when the cache expires
+            self._cache_timer.start(int(left * 1000) + 500)
+        else:
+            self._cache_timer.stop()
+
+    def _context_lines(self) -> list[str]:
+        """What the ring tells: how full the conversation is and what is left
+        of the cache of the prompt."""
+        percent = round(self.session.context_fraction() * 100)
+        left = self.session.cache_left()
+        if left is None:
+            cache = ""
+        elif left <= 0:
+            cache = self.tr("Cache expired: the next question writes it again")
+        else:
+            cache = self.tr("Cache: it expires in {time}").format(
+                time=self.tr("{n} min").format(n=max(round(left / 60), 1))
+            )
+        return [self.tr("Context: {percent}% full").format(percent=percent), cache]
+
+    def _show_context_menu(self) -> None:
+        """The menu of the ring."""
+        self._context_menu().popup(self.ring.mapToGlobal(self.ring.rect().bottomLeft()))
+
+    def _context_menu(self) -> QMenu:
+        menu = QMenu(self)
+        for line in self._context_lines():
+            if line:
+                menu.addAction(line).setEnabled(False)
+        menu.addSeparator()
+        now = menu.addAction(self.tr("Compact now"))
+        now.setEnabled(len(self.session.messages) >= 2 and not self.busy)
+        now.triggered.connect(self._compact)
+        auto = menu.addAction(self.tr("Compact automatically"))
+        auto.setCheckable(True)
+        auto.setChecked(self.auto_compact)
+        auto.toggled.connect(self._set_auto_compact)
+        return menu
+
+    def _set_auto_compact(self, on: bool) -> None:
+        self.auto_compact = on
+        self.auto_compact_changed.emit(on)
 
     def use(self, assistant: Assistant) -> None:
         """Go on with the conversation on another assistant."""
@@ -907,7 +1011,7 @@ class AssistantTab(QWidget):
             text,
             self._screen(),
             files,
-            compact=self.session.needs_compact(),
+            compact=self.auto_compact and self.session.needs_compact(),
         )
         worker.compacted.connect(self._compacted)
         worker.piece.connect(self._on_piece)

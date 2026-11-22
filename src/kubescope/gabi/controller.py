@@ -76,7 +76,7 @@ class GabiController(QObject):
         self.dock.panel.new_session_requested.connect(self.new_session)
         self.dock.panel.focus_requested.connect(self.toggle_focus)
         self.dock.panel.clear_requested.connect(self.clear_chat)
-        self.dock.panel.settings_requested.connect(port.show_settings)
+        self.dock.panel.settings_requested.connect(self._open_settings)
         self.dock.bubble.setVisible(port.settings.assistant_enabled)
         self.make_room()
         self.dock.restore(port.settings.assistant_panel)
@@ -281,6 +281,13 @@ class GabiController(QObject):
         self._settings_open = shown
         self._apply_aside()
 
+    def _open_settings(self) -> None:
+        """Hide the focus page before opening Settings, even if the window's
+        event that reports the page change arrives a moment later."""
+        self._settings_open = True
+        self._apply_aside()
+        self.port.show_settings()
+
     def toggle_focus(self) -> None:
         """The focus mode: the chat takes the whole window, with the side menu
         out of the way."""
@@ -306,11 +313,16 @@ class GabiController(QObject):
         if tab is None:
             return
         used = tab.session.usage
-        text = self.tr("{context} in · {output} out · {cache}% cached").format(
-            context=compact(used.context),
-            output=compact(used.output_tokens),
-            cache=round(used.cache_hit * 100),
-        )
+        if tab.session.cache_left() == 0:  # it was kept for a while and that is over
+            text = self.tr("{context} in · {output} out · cache expired").format(
+                context=compact(used.context), output=compact(used.output_tokens)
+            )
+        else:
+            text = self.tr("{context} in · {output} out · {cache}% cached").format(
+                context=compact(used.context),
+                output=compact(used.output_tokens),
+                cache=round(used.cache_hit * 100),
+            )
         last = tab.session.last_usage
         lines = [
             self.tr("Tokens of this session"),
@@ -372,6 +384,10 @@ class GabiController(QObject):
             tab.kube_requested.connect(lambda: self._kube_report(tab))
             tab.changed.connect(lambda: self._keep_chat(tab))
             tab.usage_changed.connect(self.show_usage)
+            tab.auto_compact = self.port.settings.auto_compact
+            tab.auto_compact_changed.connect(
+                lambda on: setattr(self.port.settings, "auto_compact", on)
+            )
             tab.navigate.connect(lambda request: self._navigate(tab, request))
             tab.write.connect(lambda request: self._write(tab, request))
             self.tab = tab
