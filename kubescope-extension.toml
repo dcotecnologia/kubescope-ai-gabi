@@ -1,6 +1,6 @@
 id = "kubescope.gabi"
 name = "Gabi - AI Assistant"
-version = "1.1.0"
+version = "1.2.1"
 api = "0"
 min_app = "2.4.0"
 entry = "kubescope.gabi:activate"

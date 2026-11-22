@@ -62,6 +62,7 @@ runs.
 | `Ctrl+G` | Asks the assistant (change it in **Settings → Shortcuts**) |
 | `kubescope chat` or `kubescope assistant` | The conversation in the terminal |
 | **Settings → Gabi** | Choose the assistant, its model and effort and its program, and clear the history |
+| The focus button in the chat header | Keeps the chat as a page of the window; the mode is saved and the chat cannot be detached while focused |
 
 The first time you ask, she tells you what she will send to the assistant and asks for your consent.
 

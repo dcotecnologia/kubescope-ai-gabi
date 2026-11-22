@@ -66,10 +66,6 @@
             "{context} in · {output} out · {cache}% cached": "{context} इनपुट · {output} आउटपुट · {cache}% कैश से",
             "{name} guide": "{name} गाइड",
             "{name} needs Claude Code or Codex.": "{name} के लिए Claude Code या Codex आवश्यक है।"
-        },
-        "GabiSettingsPanel": {
-            "Focus mode: the chat fills the page": "फ़ोकस मोड: चैट पूरे पेज में फैल जाती है",
-            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "चैट खुली होने पर वह साइड मेनू और पेजों की जगह ले लेती है; ऊपरी बार और फ़ुटर बने रहते हैं।"
         }
     }
 }

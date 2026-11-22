@@ -1,6 +1,6 @@
 [project]
 name = "kubescope-gabi"
-version = "1.1.0"
+version = "1.2.1"
 description = "Gabi, the assistant of KubeScope: ask about your cluster from a coding assistant installed on your computer"
 readme = "README.md"
 license = "MIT"
@@ -21,7 +21,7 @@ build-backend = "setuptools.build_meta"
 dev = [
     # only the tests need the app: they run her in its window and lend her its
     # real services
-    "kubescope>=1.12.0",
+    "kubescope>=2.4.0",
     "pre-commit>=4.7.0",
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",

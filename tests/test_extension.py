@@ -169,6 +169,24 @@ def test_the_conversations_the_app_kept_move_to_her_own_folder_once(
     ctx.close()
 
 
+def test_the_focus_button_returns_from_settings_to_the_chat_page(window, ctx) -> None:
+    window._show_page(0)
+    controller = services.controller
+    controller.port.settings.focus_mode = True
+    controller.dock.set_focus(True)
+    controller.dock.open()
+    window._show_page(2)
+
+    assert controller.dock.panel.isHidden()
+    assert not controller.dock.bubble.isHidden()
+
+    controller.toggle()
+
+    assert window.pages.currentIndex() == 0
+    assert not controller.dock.panel.isHidden()
+    assert controller.dock.bubble.isHidden()
+
+
 def test_without_an_old_history_nothing_is_created(window, ctx) -> None:
     assert not (ctx.data_directory / "history.json").exists()
 

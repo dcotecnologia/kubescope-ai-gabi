@@ -272,6 +272,32 @@ def test_opening_makes_the_chat_once_and_reuses_it(agreed) -> None:
     assert "Claude" in gabi.dock.panel.engine.text()
 
 
+def test_auto_compacting_is_loaded_and_saved_with_the_chat(agreed) -> None:
+    agreed.settings.auto_compact = False
+    gabi = agreed.make()
+
+    gabi.open()
+
+    assert gabi.tab is not None
+    assert gabi.tab.auto_compact is False
+    gabi.tab._set_auto_compact(True)
+    assert agreed.settings.auto_compact is True
+
+
+def test_the_settings_button_steps_the_focus_page_aside_before_opening(
+    agreed,
+) -> None:
+    gabi = agreed.make()
+    gabi.toggle_focus()
+    panel = gabi.dock.panel
+    assert not panel.isHidden()
+
+    panel.settings_button.click()
+
+    assert agreed.settings_shown == 1
+    assert panel.isHidden() and gabi.dock.is_open
+
+
 def test_the_button_opens_and_puts_the_chat_away(agreed) -> None:
     gabi = agreed.make()
 
@@ -566,9 +592,8 @@ def test_the_focus_mode_fills_the_window_and_hides_the_side_menu_while_open(
     gabi.toggle()
     assert agreed.menu_hidden[-1] is True
 
-    gabi.dock.set_floating(True)  # out of the window there is no menu to hide
-    assert agreed.menu_hidden[-1] is False
-    gabi.dock.set_floating(False)
+    gabi.dock.set_floating(True)  # focus mode cannot be detached
+    assert not gabi.dock.is_floating and agreed.menu_hidden[-1] is True
     gabi.toggle_focus()
     assert agreed.menu_hidden[-1] is False and not gabi.dock.is_focused
 
@@ -582,6 +607,15 @@ def test_the_focus_mode_is_taken_back_on_the_next_run_and_freed_on_unload(
 
     gabi.close()
     assert agreed.menu_hidden[-1] is False
+
+
+def test_saving_other_settings_keeps_the_focus_mode(agreed) -> None:
+    gabi = agreed.make()
+    gabi.toggle_focus()
+
+    gabi.apply_settings(True, "", {}, {}, {})
+
+    assert agreed.settings.focus_mode is True and gabi.dock.is_focused
 
 
 def test_a_new_session_starts_from_nothing_and_forgets_nothing_else(agreed) -> None:
@@ -606,7 +640,9 @@ def test_a_new_session_starts_from_nothing_and_forgets_nothing_else(agreed) -> N
     assert gabi.dock.is_open
 
 
-def test_the_tokens_of_the_session_are_under_the_box_of_the_question(agreed) -> None:
+def test_the_tokens_of_the_session_are_under_the_box_of_the_question(
+    agreed, monkeypatch
+) -> None:
     from kubescope.gabi.usage import Usage
 
     gabi = agreed.make()
@@ -628,6 +664,10 @@ def test_the_tokens_of_the_session_are_under_the_box_of_the_question(agreed) -> 
     session.usage = Usage(10, 2, 0, 0, None)
     gabi.show_usage()
     assert "Cost" not in label.toolTip()
+
+    monkeypatch.setattr(gabi.tab.session, "cache_left", lambda: 0)
+    gabi.show_usage()
+    assert label.text() == "10 in · 2 out · cache expired"
 
 
 def test_in_the_focus_mode_there_is_no_button_and_the_tokens_are_under_the_box(
@@ -671,21 +711,19 @@ def test_the_corner_panel_stays_over_the_settings(agreed) -> None:
     assert not gabi.dock.panel.isHidden() and not gabi.dock.is_yielding
 
 
-def test_turning_the_focus_on_from_the_settings_waits_for_them_to_be_left(
-    agreed,
-) -> None:
+def test_the_chat_button_returns_to_focus_mode_from_settings(agreed) -> None:
     gabi = agreed.make()
+    gabi.toggle_focus()
     gabi.settings_shown(True)
+    assert gabi.dock.panel.isHidden() and not gabi.dock.bubble.isHidden()
 
-    gabi.apply_settings(True, "", {}, {}, {}, True)  # the checkbox of Gabi's section
-    assert gabi.dock.is_open and gabi.dock.panel.isHidden()
+    gabi.toggle()
 
+    name, arguments = agreed.invoked[-1]
+    assert name == "open_page" and arguments["page"] == "overview"
+    assert callable(arguments["report"])
     gabi.settings_shown(False)
-    assert not gabi.dock.panel.isHidden()
-
-    gabi.settings_shown(True)
-    gabi.apply_settings(True, "", {}, {}, {}, False)  # and off again, from there
-    assert not gabi.dock.is_focused and not gabi.dock.panel.isHidden()
+    assert not gabi.dock.panel.isHidden() and gabi.dock.bubble.isHidden()
 
 
 def test_in_the_focus_mode_a_page_the_assistant_opens_is_not_covered(agreed) -> None:

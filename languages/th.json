@@ -66,10 +66,6 @@
             "{context} in · {output} out · {cache}% cached": "{context} เข้า · {output} ออก · {cache}% จากแคช",
             "{name} guide": "คู่มือ {name}",
             "{name} needs Claude Code or Codex.": "{name} ต้องใช้ Claude Code หรือ Codex"
-        },
-        "GabiSettingsPanel": {
-            "Focus mode: the chat fills the page": "โหมดโฟกัส: แชทเต็มหน้า",
-            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "เมื่อเปิดแชท แชทจะแทนที่เมนูด้านข้างและหน้าต่าง ๆ แถบด้านบนและส่วนท้ายยังอยู่"
         }
     }
 }

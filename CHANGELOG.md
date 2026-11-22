@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-22
+
+### Fixed
+
+- Remove the focus-mode checkbox from Settings; the chat header controls the mode, which stays saved between runs by @danilogco
+- Keep the focused chat attached and show a button in Settings that returns to the chat by @danilogco
+
+## [1.2.0] - 2026-11-22
+
 ### Changed
 
 - Gabi no longer has a made-up birth date, age and hometown: she is an AI assistant, and speaks of herself in the feminine in the languages that mark gender by @danilogco
@@ -18,6 +27,7 @@ All notable changes to this project will be documented in this file. The format 
 
 - Claude Code is run with none of your own MCP servers, skills or user settings, which were sent with every question: a simple greeting went from about 10,000 tokens to about 4,400 by @danilogco
 - The tokens and the cache of the session are shown under the box of the question, in the panel as in the focus mode, and no longer in the header by @danilogco
+- The Settings button in Gabi's focus-mode header now hides the chat page before opening Settings and returns to the chat when Settings are closed by @danilogco
 
 ## [1.1.0] - 2026-11-22
 
@@ -43,7 +53,9 @@ All notable changes to this project will be documented in this file. The format 
 
 - Gabi as an extension of her own project, written against the KubeScope SDK only: the chat in the corner of the window, her section of the Settings, her shortcut and the terminal commands `chat` and `assistant`
 
-[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/releases/tag/v1.0.0

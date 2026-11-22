@@ -215,6 +215,7 @@ class AssistantPanel(QFrame):
         for handle in self.handles:
             handle.setVisible(not focused and not self._floating)
         self.close_button.setVisible(not focused)  # the page is not put away
+        self.float_button.setVisible(not focused)
         self.restyle()
 
     def set_floating(self, floating: bool) -> None:
@@ -398,9 +399,11 @@ class AssistantDock(QObject):
 
     def set_focus(self, focused: bool) -> None:
         """Make the chat fill the window, or give it back its corner."""
-        if focused == self._focused:
+        if focused == self._focused and not (focused and self._floating):
             return
         self._focused = focused
+        if focused and self._floating:
+            self.set_floating(False)
         if not focused:
             self.set_yielding(False)
         self.panel.set_focused(focused)
@@ -573,7 +576,7 @@ class AssistantDock(QObject):
     def set_floating(self, floating: bool) -> None:
         """Take the panel out of the window into one of its own, or put it
         back."""
-        if floating == self._floating:
+        if floating == self._floating or (floating and self._focused):
             return
         was_open = self._open
         if floating:

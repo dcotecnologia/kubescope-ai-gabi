@@ -66,10 +66,6 @@
             "{context} in · {output} out · {cache}% cached": "{context} вхід · {output} вихід · {cache}% із кешу",
             "{name} guide": "Посібник: {name}",
             "{name} needs Claude Code or Codex.": "Для {name} потрібен Claude Code або Codex."
-        },
-        "GabiSettingsPanel": {
-            "Focus mode: the chat fills the page": "Режим фокусу: чат займає сторінку",
-            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "Поки чат відкритий, він займає місце бічного меню та сторінок; верхня панель і нижній колонтитул лишаються."
         }
     }
 }

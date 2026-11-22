@@ -66,10 +66,6 @@
             "{context} in · {output} out · {cache}% cached": "{context} en entrée · {output} en sortie · {cache} % en cache",
             "{name} guide": "Guide {name}",
             "{name} needs Claude Code or Codex.": "{name} nécessite Claude Code ou Codex."
-        },
-        "GabiSettingsPanel": {
-            "Focus mode: the chat fills the page": "Mode focus : le chat occupe la page",
-            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "Quand le chat est ouvert, il prend la place du menu latéral et des pages ; la barre du haut et le pied de page restent."
         }
     }
 }

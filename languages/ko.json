@@ -66,10 +66,6 @@
             "{context} in · {output} out · {cache}% cached": "입력 {context} · 출력 {output} · 캐시 {cache}%",
             "{name} guide": "{name} 가이드",
             "{name} needs Claude Code or Codex.": "{name}에는 Claude Code 또는 Codex가 필요합니다."
-        },
-        "GabiSettingsPanel": {
-            "Focus mode: the chat fills the page": "집중 모드: 채팅이 페이지를 채웁니다",
-            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "채팅이 열려 있는 동안 사이드 메뉴와 페이지 자리를 대신합니다. 상단 바와 푸터는 그대로 유지됩니다."
         }
     }
 }

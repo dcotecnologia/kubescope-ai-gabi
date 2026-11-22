@@ -66,10 +66,6 @@
             "{context} in · {output} out · {cache}% cached": "输入 {context} · 输出 {output} · 缓存 {cache}%",
             "{name} guide": "{name} 指南",
             "{name} needs Claude Code or Codex.": "{name} 需要 Claude Code 或 Codex。"
-        },
-        "GabiSettingsPanel": {
-            "Focus mode: the chat fills the page": "专注模式：聊天占满页面",
-            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "聊天打开时，它会取代侧边菜单和页面；顶部栏和页脚保持不变。"
         }
     }
 }

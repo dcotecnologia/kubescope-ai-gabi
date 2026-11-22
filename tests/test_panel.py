@@ -413,11 +413,16 @@ def test_the_focus_mode_fills_the_host_and_is_kept_in_the_state() -> None:
     host.resize(800, 500)
     dock = AssistantDock(host)
     dock.open()
+    dock.set_floating(True)
     dock.set_focus(True)
     dock.set_focus(True)  # again: nothing changes
 
-    assert dock.is_focused and dock.panel.geometry().size() == host.size()
+    assert dock.is_focused and not dock.is_floating
+    assert dock.panel.geometry().size() == host.size()
     assert dock.panel.focus_button.toolTip() == "Leave the focus mode"
+    assert dock.panel.float_button.isHidden()
+    dock.set_floating(True)  # focus mode cannot be detached
+    assert not dock.is_floating
 
     dock.content_area = lambda: (0, 50, 800, 400)  # between the bars of the window
     dock.place()
@@ -427,4 +432,19 @@ def test_the_focus_mode_fills_the_host_and_is_kept_in_the_state() -> None:
 
     dock.set_focus(False)
     assert not dock.is_focused and dock.panel.geometry().width() < 800
+    assert not dock.panel.float_button.isHidden()
     assert "border-radius: 10px" in dock.panel.styleSheet()
+
+
+def test_an_open_chat_waits_until_its_page_is_closed() -> None:
+    host = QWidget()
+    _HOSTS.append(host)
+    dock = AssistantDock(host)
+
+    dock.set_yielding(True)
+    dock.open()
+    assert dock.panel.isHidden()
+
+    dock.set_yielding(False)
+    assert not dock.panel.isHidden()
+    host.close()

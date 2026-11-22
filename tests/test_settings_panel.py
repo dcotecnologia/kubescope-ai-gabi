@@ -3,7 +3,14 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtWidgets import QApplication, QComboBox, QFileDialog, QLabel, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QFileDialog,
+    QLabel,
+    QWidget,
+)
 
 from kubescope.gabi import settings_panel
 from kubescope.gabi.runner import Assistant
@@ -50,9 +57,8 @@ class Setup:
         )
         self.panel.load()
 
-    def apply(self, enabled, assistant, programs, models, efforts, focus) -> None:
+    def apply(self, enabled, assistant, programs, models, efforts) -> None:
         self.applied.append((enabled, assistant, programs, models, efforts))
-        self.settings.focus_mode = focus
         self.settings.assistant_enabled = enabled
         self.settings.assistant = assistant
         self.settings.assistant_programs = programs
@@ -221,12 +227,7 @@ def test_the_panel_explains_where_the_conversations_and_the_credentials_go(
     assert isinstance(setup.panel, QWidget)
 
 
-def test_the_focus_mode_is_shown_and_saved_with_the_rest(setup) -> None:
-    assert setup.panel.focus.isChecked() is False
-
-    setup.panel.focus.setChecked(True)
-    assert setup.panel.save()
-
-    assert setup.settings.focus_mode is True
-    setup.panel.load()
-    assert setup.panel.focus.isChecked() is True
+def test_focus_mode_is_only_controlled_from_the_chat_header(setup) -> None:
+    assert [checkbox.text() for checkbox in setup.panel.findChildren(QCheckBox)] == [
+        "Show the assistant, a chat in the corner of the window"
+    ]

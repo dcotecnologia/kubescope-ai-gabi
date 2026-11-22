@@ -66,10 +66,6 @@
             "{context} in · {output} out · {cache}% cached": "{context} إدخال · {output} إخراج · {cache}٪ من الذاكرة المؤقتة",
             "{name} guide": "دليل {name}",
             "{name} needs Claude Code or Codex.": "يحتاج {name} إلى Claude Code أو Codex."
-        },
-        "GabiSettingsPanel": {
-            "Focus mode: the chat fills the page": "وضع التركيز: تملأ الدردشة الصفحة",
-            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "عند فتح الدردشة تحلّ محل القائمة الجانبية والصفحات؛ ويبقى الشريط العلوي والتذييل."
         }
     }
 }

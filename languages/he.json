@@ -66,10 +66,6 @@
             "{context} in · {output} out · {cache}% cached": "{context} קלט · {output} פלט · {cache}% מהמטמון",
             "{name} guide": "מדריך {name}",
             "{name} needs Claude Code or Codex.": "{name} דורש את Claude Code או את Codex."
-        },
-        "GabiSettingsPanel": {
-            "Focus mode: the chat fills the page": "מצב ריכוז: הצ'אט ממלא את הדף",
-            "While the chat is open, it takes the place of the side menu and the pages; the top bar and the footer stay.": "כשהצ'אט פתוח הוא תופס את מקום התפריט הצדדי והדפים; הסרגל העליון והכותרת התחתונה נשארים."
         }
     }
 }
