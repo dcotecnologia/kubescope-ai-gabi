@@ -360,6 +360,8 @@ class AssistantTab(QWidget):
         self.usage_label = QLabel("")  # the tokens, under the box of the question
         self.usage_label.setObjectName("assistantUsage")
         self.usage_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        # the color of the placeholder of the box above it
+        self.usage_label.setStyleSheet("QLabel { color: palette(placeholder-text); }")
         self.usage_label.hide()
         self.send_button.clicked.connect(self.submit)
         self.stop_button.clicked.connect(self.stop)
