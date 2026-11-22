@@ -28,8 +28,10 @@ from PySide6.QtWidgets import (
 from kubescope.gabi.icons import (
     close_icon,
     dock_icon,
+    focus_icon,
     gear_icon,
     icon_only,
+    plus_icon,
     popout_icon,
     sparkle_icon,
     trash_icon,
@@ -119,6 +121,8 @@ class AssistantPanel(QFrame):
     """The chat as a panel over the window, with a header of its own."""
 
     clear_requested = Signal()
+    new_session_requested = Signal()
+    focus_requested = Signal()
     settings_requested = Signal()
     closed = Signal()
     float_requested = Signal()  # take it out of the window, or put it back
@@ -133,6 +137,8 @@ class AssistantPanel(QFrame):
         header.setObjectName("assistantHeader")
         self.title = QLabel(NAME)
         self.clear_button = QPushButton()
+        self.new_button = QPushButton()
+        self.focus_button = QPushButton()
         self.settings_button = QPushButton()
         self.float_button = QPushButton()
         self.float_button.setFixedWidth(34)
@@ -147,7 +153,13 @@ class AssistantPanel(QFrame):
         names.addWidget(self.title)
         names.addWidget(self.engine)
         self.engine.hide()
+        self.usage = QLabel()
+        self.usage.setObjectName("assistantEngine")  # the look of the line above
+        names.addWidget(self.usage)
+        self.usage.hide()
         row.addLayout(names, 1)
+        row.addWidget(self.new_button)
+        row.addWidget(self.focus_button)
         row.addWidget(self.settings_button)
         row.addWidget(self.clear_button)
         row.addWidget(self.float_button)
@@ -161,6 +173,8 @@ class AssistantPanel(QFrame):
         layout.addWidget(header)
         layout.addLayout(self.body, 1)
         self.clear_button.clicked.connect(self.clear_requested)
+        self.new_button.clicked.connect(self.new_session_requested)
+        self.focus_button.clicked.connect(self.focus_requested)
         self.settings_button.clicked.connect(self.settings_requested)
         self.float_button.clicked.connect(self.float_requested)
         self.close_button.clicked.connect(self.closed)
@@ -172,14 +186,24 @@ class AssistantPanel(QFrame):
         for handle in self.handles:
             handle.dragged.connect(self.dragged)
             handle.released.connect(self.released)
+        self._focused = False
         self.set_floating(False)
         self.retranslate()
         self.hide()
 
+    def set_focused(self, focused: bool) -> None:
+        """In the focus mode the chat fills the window, so nothing is left to
+        drag."""
+        self._focused = focused
+        for handle in self.handles:
+            handle.setVisible(not focused and not self._floating)
+        self.retranslate()
+
     def set_floating(self, floating: bool) -> None:
         """Out of the window the system resizes it; in it, the borders do."""
         for handle in self.handles:
-            handle.setVisible(not floating)
+            handle.setVisible(not floating and not self._focused)
+        self.focus_button.setVisible(not floating)
         self.float_button.setIcon(
             dock_icon(themed("#ffffff", text=True))
             if floating
@@ -215,6 +239,19 @@ class AssistantPanel(QFrame):
         icon_only(self.settings_button, self.tr("Settings"), gear_icon(color))
         icon_only(self.clear_button, self.tr("Clear history"), trash_icon(color))
         icon_only(self.close_button, self.tr("Close"), close_icon(color))
+        icon_only(self.new_button, self.tr("New session"), plus_icon(color))
+        icon_only(
+            self.focus_button,
+            self.tr("Leave the focus mode")
+            if self._focused
+            else self.tr("Focus mode: the chat fills the window"),
+            focus_icon(color, self._focused),
+        )
+        self.new_button.setFixedWidth(34)
+        self.focus_button.setFixedWidth(34)
+        for button in (self.new_button, self.focus_button):
+            button.setMinimumHeight(0)
+            button.setMaximumHeight(16777215)
         for button in (self.settings_button, self.clear_button, self.close_button):
             button.setMinimumHeight(0)  # as tall as the others of the header
             button.setMaximumHeight(16777215)
@@ -225,6 +262,12 @@ class AssistantPanel(QFrame):
         effort."""
         self.engine.setText(text)
         self.engine.setVisible(bool(text))
+
+    def set_usage(self, text: str, tip: str = "") -> None:
+        """Say, under the engine, what the conversation used in tokens."""
+        self.usage.setText(text)
+        self.usage.setToolTip(tip)
+        self.usage.setVisible(bool(text))
 
     def show_chat(self, chat: QWidget | None) -> None:
         """Put a chat in the panel, in place of the one it had."""
@@ -288,6 +331,7 @@ class AssistantDock(QObject):
         )  # what the person asked for; the window may allow less
         self._drag_start = QSize()
         self._floating = False
+        self._focused = False  # the chat fills the window
         self._frame: FloatingFrame | None = None
         self._geometry = QByteArray()
         self._animation = QParallelAnimationGroup(self)
@@ -325,6 +369,20 @@ class AssistantDock(QObject):
     def is_floating(self) -> bool:
         return self._floating
 
+    @property
+    def is_focused(self) -> bool:
+        return self._focused
+
+    def set_focus(self, focused: bool) -> None:
+        """Make the chat fill the window, or give it back its corner."""
+        if focused == self._focused:
+            return
+        self._focused = focused
+        self.panel.set_focused(focused)
+        if self._open and not self._floating:
+            self.panel.setGeometry(self._target())
+        self.state_changed.emit()
+
     def _room(self) -> QSize:
         """The most the window leaves for the panel."""
         return QSize(
@@ -335,7 +393,10 @@ class AssistantDock(QObject):
     def _target(self) -> QRect:
         """Where the panel sits when open in the window: over the button, which
         it covers, with its corner on the corner of the button, as large as the
-        person made it and the window allows."""
+        person made it and the window allows; in the focus mode, the whole
+        window."""
+        if self._focused:
+            return QRect(0, 0, self.host.width(), self.host.height())
         room = self._room()
         width = min(max(self._size.width(), MIN_PANEL.width()), room.width())
         height = min(max(self._size.height(), MIN_PANEL.height()), room.height())
@@ -504,6 +565,7 @@ class AssistantDock(QObject):
             "width": self._size.width(),
             "height": self._size.height(),
             "floating": self._floating,
+            "focus": self._focused,
             "geometry": geometry,
         }
 
@@ -514,6 +576,9 @@ class AssistantDock(QObject):
         )
         geometry = state.get("geometry", "")
         self._geometry = QByteArray.fromBase64(QByteArray(geometry.encode("ascii")))
+        if state.get("focus") is True:
+            self._focused = True
+            self.panel.set_focused(True)
         if state.get("floating") is True and not self._floating:
             self.set_floating(True)
 

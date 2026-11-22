@@ -405,3 +405,22 @@ def test_the_button_and_the_panel_carry_the_name_of_the_assistant() -> None:
     dock.retranslate()
     assert dock.panel.title.text() == "Gabi"  # a name is not translated
     host.close()
+
+
+def test_the_focus_mode_fills_the_host_and_is_kept_in_the_state() -> None:
+    host = QWidget()
+    _HOSTS.append(host)
+    host.resize(800, 500)
+    dock = AssistantDock(host)
+    dock.open()
+    dock.set_focus(True)
+    dock.set_focus(True)  # again: nothing changes
+
+    assert dock.is_focused and dock.panel.geometry().size() == host.size()
+    assert dock.panel.focus_button.toolTip() == "Leave the focus mode"
+    assert dock.state()["focus"] is True
+
+    dock.set_focus(False)
+    assert not dock.is_focused and dock.panel.geometry().width() < 800
+    dock.restore({"focus": True})
+    assert dock.is_focused

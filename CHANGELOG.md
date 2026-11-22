@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Added
+
+- Gabi has a focus mode: the chat fills the window and the side menu is hidden while it is open, from the new button of the header; the mode is kept by @danilogco
+- A new session button in the header of the chat starts the conversation of the context from nothing by @danilogco
+- The header shows the tokens of the session (input, output and the share read from the cache), and its tip tells the cache reads and writes, the last answer and the cost, for Claude Code and Codex by @danilogco
+
 ## [1.0.1] - 2026-11-20
 
 ### Fixed
