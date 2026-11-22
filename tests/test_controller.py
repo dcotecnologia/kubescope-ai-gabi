@@ -749,3 +749,47 @@ def test_turning_the_focus_on_from_the_settings_waits_for_them_to_be_left(
     gabi.settings_shown(True)
     gabi.apply_settings(True, "", {}, {}, {}, False)  # and off again, from there
     assert not gabi.dock.is_focused and not gabi.dock.panel.isHidden()
+
+
+def test_in_the_focus_mode_a_page_the_assistant_opens_is_not_covered(agreed) -> None:
+    from kubescope.gabi.actions import BY_NAME, Request
+
+    gabi = agreed.make()
+    gabi.toggle_focus()
+    assert not gabi.dock.panel.isHidden()
+
+    other = next(one for one in BY_NAME.values() if one.name != "switch_context")
+    gabi._navigate(gabi.tab, Request(other, {}))
+
+    assert gabi.dock.panel.isHidden() and gabi.dock.is_open
+    assert agreed.menu_hidden[-1] is False  # the menu is back, to go on
+    assert not gabi.dock.bubble.isHidden()  # and so is the way back
+
+    gabi.toggle()  # the button brings the chat back
+    assert not gabi.dock.panel.isHidden() and gabi.dock.bubble.isHidden()
+    assert agreed.menu_hidden[-1] is True
+
+
+def test_the_shortcut_also_brings_the_chat_back_from_a_page(agreed) -> None:
+    from kubescope.gabi.actions import BY_NAME, Request
+
+    gabi = agreed.make()
+    gabi.toggle_focus()
+    other = next(one for one in BY_NAME.values() if one.name != "switch_context")
+    gabi._navigate(gabi.tab, Request(other, {}))
+
+    gabi.shortcut()
+    assert not gabi.dock.panel.isHidden()
+
+
+def test_outside_the_focus_mode_the_chat_stays_where_it_is_when_it_navigates(
+    agreed,
+) -> None:
+    from kubescope.gabi.actions import BY_NAME, Request
+
+    gabi = agreed.make()
+    gabi.open()
+    other = next(one for one in BY_NAME.values() if one.name != "switch_context")
+    gabi._navigate(gabi.tab, Request(other, {}))
+
+    assert not gabi.dock.panel.isHidden() and not gabi.dock.is_yielding

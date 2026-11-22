@@ -69,6 +69,7 @@ class GabiController(QObject):
         self.tab: AssistantTab | None = None
         self._switching = False  # the assistant itself changes the context
         self._settings_open = False  # the Settings have the page of the window
+        self._navigated = False  # the assistant took the person to a page
         self.dock = AssistantDock(port.central)
         self.dock.bubble.clicked.connect(self.toggle)
         self.dock.panel.closed.connect(self._put_away)
@@ -121,7 +122,9 @@ class GabiController(QObject):
         settings.assistant = assistant
         settings.focus_mode = focus
         self.dock.set_focus(focus)
-        self.dock.set_yielding(self._settings_open and focus)  # set from there
+        if not focus:
+            self._navigated = False
+        self._apply_aside()
         self.dock.bubble.setVisible(enabled)
         self.make_room()
         if not enabled:
@@ -215,6 +218,9 @@ class GabiController(QObject):
         """
         if not self.port.settings.assistant_enabled:
             return
+        if self._navigated:  # Ctrl+G is the way back to the page of the chat
+            self.toggle()
+            return
         tab = self.tab
         if self.dock.is_open and tab is not None:
             if tab.input.hasFocus() and not self.dock.is_focused:
@@ -228,8 +234,15 @@ class GabiController(QObject):
             tab.input.setFocus()
 
     def toggle(self) -> None:
-        """The button of the corner: open the chat, or put it away."""
-        if self.dock.is_open:
+        """The button of the corner: open the chat, or put it away; in the
+        focus mode, after the assistant took the person to a page, it brings
+        the chat back."""
+        if self._navigated:
+            self._navigated = False
+            self._apply_aside()
+            if self.tab is not None:
+                self.tab.input.setFocus()
+        elif self.dock.is_open:
             self._put_away()
         else:
             self.open()
@@ -237,6 +250,7 @@ class GabiController(QObject):
     def _put_away(self) -> None:
         """Close the chat; with it goes the focus mode, which hid the side
         menu."""
+        self._navigated = False
         self.dock.close()
         self._sync_focus()
 
@@ -245,17 +259,27 @@ class GabiController(QObject):
         the focus mode."""
         dock = self.dock
         page = dock.is_open and dock.is_focused and not dock.is_floating
-        self.port.hide_side_menu(page)
+        covering = page and not dock.is_yielding
+        self.port.hide_side_menu(covering)
         self.port.smaller_window(page)  # a chat has no need of the width of a list
-        # the page is open for good: there is no button to open it
-        self.dock.bubble.setVisible(self.port.settings.assistant_enabled and not page)
+        # the page is open for good, so it has no button to open it; only when
+        # the assistant took the person to another page is there one, to go back
+        button = not page or self._navigated
+        self.dock.bubble.setVisible(self.port.settings.assistant_enabled and button)
         self.show_usage()
+
+    def _apply_aside(self) -> None:
+        """The chat that is the page steps aside for the Settings, or for a
+        page the assistant took the person to."""
+        aside = self._settings_open or self._navigated
+        self.dock.set_yielding(self.dock.is_focused and aside)
+        self._sync_focus()
 
     def settings_shown(self, shown: bool) -> None:
         """The Settings were opened or left: the chat that is the page steps
         aside for them, and is back when they are left."""
         self._settings_open = shown
-        self.dock.set_yielding(shown and self.dock.is_focused)
+        self._apply_aside()
 
     def toggle_focus(self) -> None:
         """The focus mode: the chat takes the whole window, with the side menu
@@ -572,6 +596,9 @@ class GabiController(QObject):
         name = request.action.name
         if name != "switch_context":
             self.port.invoke(name, report=tab.note, **request.args)
+            if self.dock.is_focused and self.dock.is_open:  # the page is hidden
+                self._navigated = True
+                self._apply_aside()
             return
         self._switching = True
         try:

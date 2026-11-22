@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Added
 
+- In the focus mode the chat also steps aside for a page the assistant takes you to, and a button (or Ctrl+G) brings it back
 - In the focus mode the Settings still open: the chat steps aside while they are open and is back when they are left
 - Gabi has a focus mode: while the chat is open it takes the place of the side menu and the pages, and the top bar and the footer stay; the chat is always open, with the look of the pages of the app; it is set in the header of the chat or in the Settings of Gabi, and kept by @danilogco
 - A new session button in the header of the chat starts the conversation of the context from nothing by @danilogco
