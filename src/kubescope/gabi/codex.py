@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from kubescope.gabi.runner import Assistant
+from kubescope.gabi.usage import Usage, count
 
 # Everything of Codex that can act, off: it is asked to answer, not to work. With
 # the sandbox only read-only it could still read any file of the computer.
@@ -91,6 +92,24 @@ def parse_line(line: str) -> tuple[str, str]:
         text = item.get("text")
         return (f"{text}\n\n" if isinstance(text, str) and text else ""), ""
     return "", ""
+
+
+def parse_usage(line: str) -> Usage | None:
+    """The tokens of a turn, which it reports when it is done; what it read
+    from the cache is part of its input, so it is taken out of it."""
+    try:
+        event = _dict(json.loads(line))
+    except ValueError:
+        return None
+    if event.get("type") != "turn.completed":
+        return None
+    used = _dict(event.get("usage"))
+    cached = count(used.get("cached_input_tokens"))
+    return Usage(
+        max(count(used.get("input_tokens")) - cached, 0),
+        count(used.get("output_tokens")),
+        cached,
+    )
 
 
 def defaults() -> tuple[str, str]:

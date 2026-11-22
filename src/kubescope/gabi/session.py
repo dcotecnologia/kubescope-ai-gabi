@@ -14,6 +14,7 @@ from kubescope.gabi import attachments as files
 from kubescope.gabi import runner
 from kubescope.gabi.attachments import Attachment
 from kubescope.gabi.runner import Assistant, AssistantError
+from kubescope.gabi.usage import Usage
 
 HISTORY_LIMIT = 40_000  # characters of the conversation that are sent
 
@@ -42,6 +43,8 @@ class ChatSession:
         self.system = system
         self.limit = limit
         self.messages: list[Message] = []
+        self.usage = Usage()  # the tokens of every answer of this conversation
+        self.last_usage = Usage()  # and of the newest one
 
     def prompt(self) -> str:
         """The conversation to send: the newest messages that fit, and the last
@@ -66,6 +69,15 @@ class ChatSession:
             )
         return f"{turns}\n\nAnswer the last message of the User as the Assistant."
 
+    def _used(self, used: Usage) -> None:
+        self.last_usage = used
+        self.usage += used
+
+    def reset(self) -> None:
+        """Start over: no messages and no tokens counted."""
+        self.messages.clear()
+        self.usage = self.last_usage = Usage()
+
     def send(
         self,
         text: str,
@@ -87,6 +99,7 @@ class ChatSession:
                 self.model,
                 self.system,
                 files.images(attachments),
+                self._used,
             ):
                 answer.append(piece)
                 yield piece

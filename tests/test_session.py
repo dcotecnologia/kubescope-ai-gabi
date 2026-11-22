@@ -3,6 +3,7 @@ import pytest
 from kubescope.gabi import session as chat
 from kubescope.gabi.runner import Assistant, AssistantError
 from kubescope.gabi.session import ChatSession, Message
+from kubescope.gabi.usage import Usage
 
 FAKE = Assistant(
     "fake", "Fake", "fake-ai", lambda model, system: [], lambda line: ("", "")
@@ -16,8 +17,10 @@ def answers(monkeypatch):
     calls: list[tuple] = []
     plan: dict = {"pieces": [], "error": None}
 
-    def ask(assistant, prompt, model, system, images=()):
+    def ask(assistant, prompt, model, system, images=(), on_usage=None):
         calls.append((assistant, prompt, model, system))
+        if on_usage is not None and plan.get("usage") is not None:
+            on_usage(plan["usage"])
         yield from plan["pieces"]
         if plan["error"]:
             raise plan["error"]
@@ -123,7 +126,7 @@ def test_text_files_go_after_the_newest_question_and_images_to_the_program(
 
     seen: list = []
 
-    def ask(assistant, prompt, model, system, images):
+    def ask(assistant, prompt, model, system, images, on_usage=None):
         seen.append((prompt, [image.name for image in images]))
         yield "ok"
 
@@ -140,3 +143,19 @@ def test_text_files_go_after_the_newest_question_and_images_to_the_program(
     assert first[1] == ["shot.png"]
     assert "boom" not in second[0] and second[1] == []  # sent once, not kept
     assert session.messages[0].attachments == (log, shot)
+
+
+def test_the_session_adds_up_the_tokens_of_its_answers_and_starts_over(answers) -> None:
+    _calls, plan = answers
+    session = ChatSession(FAKE)
+    plan["pieces"] = ["Yes."]
+    plan["usage"] = Usage(10, 5, 100, 20, 0.5)
+    list(session.send("one"))
+    plan["usage"] = Usage(3, 2, 130, 0, None)
+    list(session.send("two"))
+
+    assert session.last_usage == Usage(3, 2, 130, 0, None)
+    assert session.usage == Usage(13, 7, 230, 20, 0.5)
+
+    session.reset()
+    assert session.messages == [] and not session.usage and not session.last_usage

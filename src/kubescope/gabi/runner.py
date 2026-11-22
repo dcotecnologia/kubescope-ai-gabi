@@ -23,6 +23,7 @@ from kubescope.sdk.flatpak import host_has, in_flatpak, on_host
 from kubescope.sdk.programs import find_program
 
 from kubescope.gabi.attachments import Attachment
+from kubescope.gabi.usage import Usage
 
 # no console window flashing up from the program, on Windows
 _NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
@@ -76,6 +77,8 @@ class Assistant:
     # the model and the effort the program uses when it is told none, from its own
     # configuration; empty when it does not say
     defaults: Callable[[], tuple[str, str]] | None = None
+    # the tokens an answer used, from a line of its output; None for any other line
+    parse_usage: Callable[[str], Usage | None] | None = None
 
     @property
     def takes_images(self) -> bool:
@@ -144,9 +147,11 @@ def ask(
     model: str | None = None,
     system: str = SYSTEM_PROMPT,
     images: Sequence[Attachment] = (),
+    on_usage: Callable[[Usage], None] | None = None,
 ) -> Generator[str]:
     """Send the question, with the images that came with it, and yield the
-    answer in pieces.
+    answer in pieces; `on_usage` is told the tokens it used, when the program
+    says.
 
     Closing the generator before the end stops the program.
     """
@@ -154,7 +159,7 @@ def ask(
         raise AssistantError(f"{assistant.name} does not take images")
     folder = tempfile.TemporaryDirectory() if images and assistant.image_files else None
     try:
-        yield from _run(assistant, prompt, model, system, images, folder)
+        yield from _run(assistant, prompt, model, system, images, folder, on_usage)
     finally:
         if folder is not None:
             folder.cleanup()
@@ -167,6 +172,7 @@ def _run(
     system: str,
     images: Sequence[Attachment],
     folder: tempfile.TemporaryDirectory[str] | None,
+    on_usage: Callable[[Usage], None] | None = None,
 ) -> Generator[str]:
     """Start the program and read its answer; the images it reads from files
     are written to `folder`."""
@@ -207,6 +213,10 @@ def _run(
         except OSError as error:
             raise AssistantError(str(error)) from error
         for line in process.stdout:
+            if on_usage is not None and assistant.parse_usage is not None:
+                used = assistant.parse_usage(line)
+                if used is not None:
+                    on_usage(used)
             text, error = assistant.parse_line(line)
             if error:
                 raise AssistantError(error)

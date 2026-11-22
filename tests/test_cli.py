@@ -26,7 +26,7 @@ class Brain:
         self.replies = list(replies)
         self.prompts = []
 
-    def __call__(self, assistant, prompt, model, system, images):
+    def __call__(self, assistant, prompt, model, system, images, on_usage=None):
         self.prompts.append(prompt)
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):

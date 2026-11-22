@@ -8,6 +8,7 @@ from typing import Any
 
 from kubescope.gabi.attachments import Attachment
 from kubescope.gabi.runner import Assistant
+from kubescope.gabi.usage import Usage, count
 
 
 def options(model: str | None, system: str) -> list[str]:
@@ -68,6 +69,25 @@ def parse_line(line: str) -> tuple[str, str]:
     return (text if isinstance(text, str) else ""), ""
 
 
+def parse_usage(line: str) -> Usage | None:
+    """The tokens of an answer, which the final line of its output reports."""
+    try:
+        event = _dict(json.loads(line))
+    except ValueError:
+        return None
+    if event.get("type") != "result":
+        return None
+    used = _dict(event.get("usage"))
+    cost: Any = event.get("total_cost_usd")
+    return Usage(
+        count(used.get("input_tokens")),
+        count(used.get("output_tokens")),
+        count(used.get("cache_read_input_tokens")),
+        count(used.get("cache_creation_input_tokens")),
+        float(cost) if isinstance(cost, int | float) else None,
+    )
+
+
 def defaults() -> tuple[str, str]:
     """The model and the effort in the settings of Claude Code."""
     folder = os.environ.get("CLAUDE_CONFIG_DIR") or str(Path.home() / ".claude")
@@ -103,4 +123,5 @@ CLAUDE = Assistant(
     efforts=("low", "medium", "high", "xhigh", "max"),
     effort_options=lambda effort: ["--effort", effort],
     defaults=defaults,
+    parse_usage=parse_usage,
 )
