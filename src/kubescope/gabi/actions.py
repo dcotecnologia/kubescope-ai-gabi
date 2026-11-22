@@ -167,11 +167,11 @@ ACTIONS = (
     Action(
         "get_logs",
         "fetch",
-        "read a log; a short one comes whole, for a long one give a window: start "
-        "with since_minutes or since (date and time with zone, as "
-        "2026-10-08T13:49:00-03:00), end now or with until_minutes or until (an "
-        "end needs a start); search keeps the lines with any term, split by |; "
-        "a too long answer says where to ask again from",
+        "read a log; a short one comes whole, for a long one give a window: "
+        "since_minutes or since (date and time with zone, as "
+        "2026-10-08T13:49:00-03:00), ending now or at until_minutes or until (an "
+        "end needs a start); search keeps the lines with any term, split by |; a "
+        "too long answer says where to resume",
         (
             Param("namespace", str, "the namespace of the Pod"),
             Param("pod", str, "the name of the Pod"),
@@ -346,12 +346,11 @@ def instructions(write_mode: bool = True) -> str:
     the ones that change a cluster are not among them, as if they did not
     exist."""
     lines = [
-        f"To act, put a fenced block tagged {FENCE} in your answer, with one JSON "
-        'object and the action in "action", one action per block; say in plain '
-        "words what it does and why first. You cannot see the result of a "
-        "navigate or write action and the person confirms changes, so never say it "
-        "is done. A fetch answers in the next message; ask for one at a time "
-        "unless they are independent. Only these actions and fields:",
+        f"To act, put a fenced block tagged {FENCE} with one JSON object and the "
+        'action in "action", one per block; say first what it does and why. You '
+        "cannot see the result of a navigate or write action and the person "
+        "confirms changes: never say it is done. A fetch answers in the next "
+        "message; ask for one at a time unless they are independent. Actions:",
     ]
     named: dict[str, str] = {}  # a long list of choices is said once, by name
     for action in ACTIONS:

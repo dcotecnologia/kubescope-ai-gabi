@@ -91,12 +91,16 @@ def parse_usage(line: str) -> Usage | None:
         return None
     used = _dict(event.get("usage"))
     cost: Any = event.get("total_cost_usd")
+    written = _dict(used.get("cache_creation"))  # by how long the cache is kept
+    ttl = 3600 if count(written.get("ephemeral_1h_input_tokens")) else 0
+    ttl = ttl or (300 if count(written.get("ephemeral_5m_input_tokens")) else 0)
     return Usage(
         count(used.get("input_tokens")),
         count(used.get("output_tokens")),
         count(used.get("cache_read_input_tokens")),
         count(used.get("cache_creation_input_tokens")),
         float(cost) if isinstance(cost, int | float) else None,
+        ttl,
     )
 
 

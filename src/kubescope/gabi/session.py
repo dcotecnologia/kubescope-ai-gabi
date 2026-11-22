@@ -8,7 +8,8 @@ left out. It works the same with any of them and the app decides what
 leaves the machine.
 """
 
-from collections.abc import Generator
+import time
+from collections.abc import Callable, Generator
 from dataclasses import dataclass
 from typing import Literal
 
@@ -19,6 +20,7 @@ from kubescope.gabi.runner import Assistant, AssistantError
 from kubescope.gabi.usage import Usage
 
 HISTORY_LIMIT = 40_000  # characters of the conversation that are sent
+clock: Callable[[], float] = time.monotonic  # replaced by the tests
 COMPACT_TOKENS = 100_000  # the context after which a long conversation is compacted
 SUMMARY_INPUT_LIMIT = 150_000  # characters of the conversation a summary is made of
 SUMMARY_LABEL = "[Summary of the conversation so far]"
@@ -57,6 +59,8 @@ class ChatSession:
         self.messages: list[Message] = []
         self.usage = Usage()  # the tokens of every answer of this conversation
         self.last_usage = Usage()  # and of the newest one
+        self.cache_ttl = 0  # seconds the cache of a prompt is kept, once told
+        self.answered_at: float | None = None  # when the cache was last used
         self._live: runner.Live | None = None  # the program kept running
         self._live_key: tuple[object, ...] | None = None  # how it was started
         self._primed = False  # it already has the conversation up to now
@@ -194,6 +198,7 @@ class ChatSession:
         self.messages = [Message("user", f"{SUMMARY_LABEL}\n{summary}")]
         self._drop_live()
         self.last_usage = Usage()
+        self.answered_at = None  # the cache is of a conversation that is gone
         return before, self.size()
 
     @staticmethod
@@ -211,7 +216,23 @@ class ChatSession:
             f"{_LABELS[message.role]}: {message.text}" for message in reversed(kept)
         )
 
+    def cache_left(self) -> float | None:
+        """Seconds the cache of the prompt has left, which each answer renews;
+        0 once it expired and None when it is not known."""
+        if self.answered_at is None or not self.cache_ttl:
+            return None
+        return max(self.cache_ttl - (clock() - self.answered_at), 0.0)
+
+    def context_fraction(self) -> float:
+        """How full the conversation is, 0 to 1, against what makes it be
+        compacted."""
+        if self.assistant.open_live is not None:
+            return min(self.last_usage.context / COMPACT_TOKENS, 1.0)
+        return min(self.size() / self.limit, 1.0)
+
     def _used(self, used: Usage) -> None:
+        self.cache_ttl = used.cache_ttl or self.cache_ttl
+        self.answered_at = clock()
         self.last_usage = used
         self.usage += used
 
