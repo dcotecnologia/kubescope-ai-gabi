@@ -22,5 +22,6 @@ before you install any extension.
 
 - It asks for the least permissions it needs, and the README says why it asks for each one.
 - It reads clusters and accounts only through the services the app lends it, and changes nothing outside the write mode.
+- It runs the program of the assistant with no tools, no saved session and none of your own configuration of it (no MCP servers, skills or user settings), so that only what you type and what she reads from the cluster is sent.
 - It never stores or logs credentials or secrets, and it makes no network request of its own beyond what the README says.
 - Every release is a tag; KubeScope installs what it recommends only if the files are the ones whose hash it pinned.

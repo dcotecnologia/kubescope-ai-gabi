@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file. The format 
 
 ### Fixed
 
+- Claude Code is run with none of your own MCP servers, skills or user settings, which were sent with every question: a simple greeting went from about 10,000 tokens to about 4,400 by @danilogco
 - The tokens and the cache of the session are shown under the box of the question, in the panel as in the focus mode, and no longer in the header by @danilogco
 
 ## [1.1.0] - 2026-11-22

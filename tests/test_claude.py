@@ -19,6 +19,9 @@ def test_claude_runs_with_nothing_it_could_act_on_the_machine_with(monkeypatch) 
     assert options[:2] == ["claude", "-p"]
     assert options[options.index("--tools") + 1] == ""
     assert "--no-session-persistence" in options
+    assert "--strict-mcp-config" in options  # no MCP servers of the person
+    assert "--disable-slash-commands" in options  # no skills of the person
+    assert options[options.index("--setting-sources") + 1] == ""  # no settings
     assert options[options.index("--system-prompt") + 1] == runner.SYSTEM_PROMPT
     assert "--model" not in options
     assert runner.command(claude.CLAUDE, "opus")[-2:] == ["--model", "opus"]

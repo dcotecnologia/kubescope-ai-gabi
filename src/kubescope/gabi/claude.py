@@ -13,7 +13,14 @@ from kubescope.gabi.usage import Usage, count
 
 def options(model: str | None, system: str) -> list[str]:
     """No tools, so it cannot read a file or run a command, and no saved
-    session."""
+    session.
+
+    Nothing of the person's own Claude Code is sent along either: not
+    the MCP servers, nor the skills and commands, nor the settings of
+    the user (their instructions and memory), which would be sent with
+    every question and cost tokens that have nothing to do with the
+    cluster.
+    """
     arguments = [
         "-p",
         "--output-format",
@@ -23,6 +30,10 @@ def options(model: str | None, system: str) -> list[str]:
         "--tools",
         "",
         "--no-session-persistence",
+        "--strict-mcp-config",
+        "--disable-slash-commands",
+        "--setting-sources",
+        "",
         "--system-prompt",
         system,
     ]
