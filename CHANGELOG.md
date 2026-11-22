@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+### Changed
+
+- The instructions of Gabi are about 30% shorter (the lists of kinds and views are said once, and the text is tighter), so every conversation starts with about 3,400 tokens, a quarter fewer; she still refuses changes in the read-only mode, asks which container, keeps to Kubernetes and asks for the same actions by @danilogco
+
 ### Added
 
 - Claude Code is kept running for the chat, so each question sends only what is new and not the whole conversation again: the conversation stays in the memory of that program and is never saved to disk, the cache is reused and a long chat costs much less (about 60% less input in six long questions); it is started again, with the conversation, when the model, the language or the mode change, when an answer is stopped or when it dies by @danilogco

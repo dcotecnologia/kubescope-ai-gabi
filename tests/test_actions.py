@@ -181,3 +181,13 @@ def test_the_live_usage_of_a_pod_can_be_asked_for_by_the_namespace_and_the_pod()
         _only(_block({"action": "get_usage", "namespace": "ns"})), Invalid
     )
     assert "- get_usage [fetch]" in actions.instructions(write_mode=False)
+
+
+def test_a_long_list_of_choices_is_said_once_and_named_after_that() -> None:
+    told = actions.instructions(write_mode=True)
+
+    assert told.count("|addons|".strip("|")) == 1  # the views, once
+    assert told.count("ConfigMap|CronJob") == 1  # the kinds, once
+    assert "{view: str (VIEW)}" in told and "kind: str (KIND)" in told
+    assert "\nVIEW = addons|" in told and "\nKIND = ConfigMap|" in told
+    assert "(overview|workloads_overview|settings)" in told  # a short one stays

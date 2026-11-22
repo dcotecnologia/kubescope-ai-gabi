@@ -46,11 +46,11 @@ def test_the_assistant_is_told_to_say_plainly_that_it_is_read_only() -> None:
 def test_the_assistant_is_gabi_of_dco_tecnologia_and_says_it_is_an_ai() -> None:
     told = knowledge.system_prompt()
 
-    assert "Your name is Gabi" in told
-    assert "You work for DCO Tecnologia" in told
-    assert "expert in Kubernetes and in KubeScope" in told
-    assert "You are an AI assistant: say so if asked" in told
-    assert "do not claim to be anything else" in told
+    assert "You are Gabi, an AI assistant of DCO Tecnologia" in told
+    assert "an expert in Kubernetes and KubeScope" in told
+    assert "Say you are an AI if asked" in told
+    assert "you use the assistant program installed on the person's computer" in told
+    assert "nothing else" in told
     assert runner.NAME == "Gabi" and runner.COMPANY == "DCO Tecnologia"
 
 
@@ -116,14 +116,14 @@ def test_gabi_asks_which_container_when_there_are_several_and_does_not_guess() -
 
     assert rule in told
     for phrase in (
-        "A Pod has one or more containers, and may have init containers besides",
-        "A workload (a Deployment, StatefulSet, DaemonSet, ReplicaSet, Job or "
-        "CronJob) has the same containers in its Pod template",
-        "if they name it or clearly point to it (the api, the worker), use that one",
+        "A Pod has main containers and may have init containers",
+        "a workload (Deployment, StatefulSet, DaemonSet, ReplicaSet, Job or "
+        "CronJob) has them in its Pod template",
+        "Use the one the person names or clearly points to",
         "if there is only one main container use it without asking",
         "Never take an init container unless they ask for it by name",
         "do not guess and do not take the first one",
-        "ask which container they want, naming the options, and wait for the answer",
+        "ask which, naming the options, and wait",
         "The logs of a workload are the logs of its Pods",
         "the lists show the owner of each Pod",
     ):
@@ -139,11 +139,10 @@ def test_gabi_is_told_she_can_read_the_live_usage_and_not_to_send_to_kubectl_top
 
     assert rule in told
     for phrase in (
-        "its live CPU and memory with get_usage",
-        "get_usage gives it by container beside what each container asks for and "
-        "may use",
-        "the rows of the lists carry the use of each Pod and workload",
-        "compare the use with the requests and the limits",
+        "live CPU and memory with get_usage",
+        "get_usage (by container, beside what each asks for and may use)",
+        "the use in the rows of the lists (Pods and workloads, with metrics-server)",
+        "compare it with the requests and limits",
         "Do not send the person to kubectl top for what you can read",
         "if the cluster has no metrics-server, say so",
     ):

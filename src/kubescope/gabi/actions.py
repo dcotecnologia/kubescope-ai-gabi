@@ -58,23 +58,24 @@ _NAMESPACE = Param(
 _NAME = Param("name", str, "its name")
 _KIND = Param("kind", str, "the Kubernetes kind", choices=KINDS)
 
+LONG_CHOICES = 60  # characters of choices after which a list is named, not repeated
 ACTIONS = (
     Action(
         "open_view",
         "navigate",
-        "show a list in the app",
+        "show a list",
         (Param("view", str, "the list", choices=VIEWS),),
     ),
     Action(
         "set_namespace",
         "navigate",
-        "choose the namespace of the lists; empty is all namespaces",
+        "set the namespace of the lists; empty is all",
         (Param("namespace", str, "the namespace", empty=True),),
     ),
     Action(
         "search",
         "navigate",
-        "type in the search bar of the list, which looks through every column",
+        "type in the search bar of the list",
         (
             Param("text", str, "what to look for; empty clears it", empty=True),
             Param("regex", bool, "read it as a regular expression", required=False),
@@ -84,13 +85,13 @@ ACTIONS = (
     Action(
         "switch_context",
         "navigate",
-        "change the cluster of the kubeconfig",
+        "change the context",
         (Param("context", str, "the name of the context"),),
     ),
     Action(
         "open_page",
         "navigate",
-        "go to a page of the window that is not a list",
+        "go to a page that is not a list",
         (
             Param(
                 "page",
@@ -103,37 +104,36 @@ ACTIONS = (
     Action(
         "switch_tab",
         "navigate",
-        "show a Details or Logs tab that is already open, found by its title",
+        "show an open Details or Logs tab, by title",
         (Param("title", str, "a part of the title of the tab"),),
     ),
     Action(
         "show_logs",
         "navigate",
-        "open the logs of a Pod for the person, in a tab",
+        "open the logs of a Pod in a tab",
         (
             Param("namespace", str, "the namespace of the Pod"),
             Param("pod", str, "the name of the Pod"),
             Param("container", str, "the container", required=False, empty=True),
         ),
     ),
-    Action("refresh", "navigate", "read the list again"),
+    Action("refresh", "navigate", "reload the list"),
     Action(
         "show_details",
         "navigate",
-        "open the details of a resource for the person",
+        "open the details of a resource",
         (_KIND, _NAMESPACE, _NAME),
     ),
     Action(
         "get_details",
         "fetch",
-        "read the document of a resource and get it back as the next message",
+        "read the document of a resource",
         (_KIND, _NAMESPACE, _NAME),
     ),
     Action(
         "list",
         "fetch",
-        "read a list of the cluster, as the app shows it, and get it back as the "
-        "next message",
+        "read a list as the app shows it",
         (
             Param("view", str, "the list", choices=VIEWS),
             Param("namespace", str, "its namespace; empty is all", empty=True),
@@ -142,8 +142,7 @@ ACTIONS = (
     Action(
         "get_events",
         "fetch",
-        "read the events of a namespace, the youngest first, and get them back as "
-        "the next message",
+        "read the events of a namespace, youngest first",
         (
             Param("namespace", str, "the namespace; empty is all", empty=True),
             Param(
@@ -158,8 +157,8 @@ ACTIONS = (
     Action(
         "get_usage",
         "fetch",
-        "read the live CPU and memory a Pod uses, by container, beside what its "
-        "containers ask for and may use, and get it back as the next message",
+        "read the live CPU and memory of a Pod by container, beside its requests "
+        "and limits",
         (
             Param("namespace", str, "the namespace of the Pod"),
             Param("pod", str, "the name of the Pod"),
@@ -168,14 +167,11 @@ ACTIONS = (
     Action(
         "get_logs",
         "fetch",
-        "read a log and get it back as the next message; a log short enough for "
-        "one answer is read whole, with no window; for a longer one, ask for a "
-        "window of time: it starts with since_minutes (how long ago) or "
-        "since (a date and time with its time zone, such as "
-        "2026-10-08T13:49:00-03:00) and ends now, or with until_minutes or until "
-        "likewise, and an end needs a start; with search only the lines with any of "
-        "its terms, separated by |, come back; an answer that is too long stops and "
-        "says where, to ask again from there",
+        "read a log; a short one comes whole, for a long one give a window: start "
+        "with since_minutes or since (date and time with zone, as "
+        "2026-10-08T13:49:00-03:00), end now or with until_minutes or until (an "
+        "end needs a start); search keeps the lines with any term, split by |; "
+        "a too long answer says where to ask again from",
         (
             Param("namespace", str, "the namespace of the Pod"),
             Param("pod", str, "the name of the Pod"),
@@ -220,20 +216,20 @@ ACTIONS = (
     Action(
         "restart",
         "write",
-        "restart the Pods of a Deployment, one by one",
+        "restart a Deployment, Pod by Pod",
         (Param("namespace", str, "its namespace"), _NAME),
     ),
     Action(
         "evict_pod",
         "write",
-        "evict a Pod, respecting its disruption budget",
+        "evict a Pod, respecting its budget",
         (Param("namespace", str, "its namespace"), _NAME),
     ),
     Action("delete", "write", "delete a resource", (_KIND, _NAMESPACE, _NAME)),
     Action(
         "replace",
         "write",
-        "replace a resource with the whole document, as kubectl replace does",
+        "replace a resource with the whole document",
         (
             _KIND,
             _NAMESPACE,
@@ -350,25 +346,36 @@ def instructions(write_mode: bool = True) -> str:
     the ones that change a cluster are not among them, as if they did not
     exist."""
     lines = [
-        "The client can act for the person. To ask for an action, put a fenced "
-        f"block in your answer, tagged {FENCE}, with one JSON object and the name "
-        'of the action in "action". Ask for one action per block. Say in plain '
-        "words what it does and why before you ask. You cannot see the result of "
-        "a navigate or write action, and the client asks the person before it "
-        "changes anything, so never say it is done. A fetch action answers in the "
-        "next message; ask for one fetch at a time unless they do not depend on each "
-        "other. Use only these actions and their fields:",
+        f"To act, put a fenced block tagged {FENCE} in your answer, with one JSON "
+        'object and the action in "action", one action per block; say in plain '
+        "words what it does and why first. You cannot see the result of a "
+        "navigate or write action and the person confirms changes, so never say it "
+        "is done. A fetch answers in the next message; ask for one at a time "
+        "unless they are independent. Only these actions and fields:",
     ]
+    named: dict[str, str] = {}  # a long list of choices is said once, by name
     for action in ACTIONS:
         if action.kind == "write" and not write_mode:
             continue
-        fields = ", ".join(
-            f"{param.name}{'' if param.required else '?'}: {param.type.__name__}"
-            + (f" ({'|'.join(param.choices)})" if param.choices else "")
-            + (f" ({param.low}-{param.high})" if param.type is int else "")
-            for param in action.params
+        fields = []
+        for param in action.params:
+            field = (
+                f"{param.name}{'' if param.required else '?'}: {param.type.__name__}"
+            )
+            if param.choices:
+                choices = "|".join(param.choices)
+                if len(choices) > LONG_CHOICES:
+                    label = param.name.upper()
+                    named[label] = choices
+                    choices = label
+                field += f" ({choices})"
+            if param.type is int:
+                field += f" ({param.low}-{param.high})"
+            fields.append(field)
+        lines.append(
+            f"- {action.name} [{action.kind}] {{{', '.join(fields)}}}: {action.summary}"
         )
-        lines.append(f"- {action.name} [{action.kind}] {{{fields}}}: {action.summary}")
+    lines += [f"{label} = {choices}" for label, choices in named.items()]
     return "\n".join(lines)
 
 
