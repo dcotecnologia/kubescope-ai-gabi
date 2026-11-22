@@ -7,6 +7,7 @@ from kubescope.extensions.manifest import read_manifest
 from kubescope.sdk import (
     CONTEXT_CHANGED,
     LANGUAGE_CHANGED,
+    SETTINGS_SHOWN,
     SHUTDOWN,
     THEME_CHANGED,
     WRITE_MODE_CHANGED,
@@ -107,6 +108,7 @@ def test_unloading_her_takes_everything_out_of_the_window(window) -> None:
         (LANGUAGE_CHANGED, {"language": "pt_BR"}, ["retranslate", "refresh_system"]),
         (WRITE_MODE_CHANGED, {"write_mode": True}, ["refresh_system"]),
         (SHUTDOWN, {}, ["shutdown"]),
+        (SETTINGS_SHOWN, {"shown": True}, ["settings_shown"]),
     ],
 )
 def test_the_chat_hears_what_the_app_tells_it(
@@ -120,8 +122,11 @@ def test_the_chat_hears_what_the_app_tells_it(
         "retranslate",
         "refresh_system",
         "shutdown",
+        "settings_shown",
     ):
-        monkeypatch.setattr(controller, name, lambda name=name: heard.append(name))
+        monkeypatch.setattr(
+            controller, name, lambda *_args, name=name: heard.append(name)
+        )
 
     window.extension_host.events.emit(event, **payload)
 

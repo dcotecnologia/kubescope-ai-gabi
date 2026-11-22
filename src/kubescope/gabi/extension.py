@@ -12,6 +12,7 @@ from typing import Any
 from kubescope.sdk import (
     CONTEXT_CHANGED,
     LANGUAGE_CHANGED,
+    SETTINGS_SHOWN,
     SHUTDOWN,
     THEME_CHANGED,
     WRITE_MODE_CHANGED,
@@ -77,6 +78,7 @@ def _in_the_window(ctx: Context, settings: GabiSettings) -> None:
     ctx.events.on(THEME_CHANGED, lambda: controller.restyle())
     ctx.events.on(LANGUAGE_CHANGED, lambda language: _language_changed(controller))
     ctx.events.on(WRITE_MODE_CHANGED, lambda write_mode: controller.refresh_system())
+    ctx.events.on(SETTINGS_SHOWN, lambda shown: controller.settings_shown(shown))
     ctx.events.on(SHUTDOWN, lambda: controller.shutdown())
     ctx.add_shortcut(
         SHORTCUT,
