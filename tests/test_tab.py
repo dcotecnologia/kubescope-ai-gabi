@@ -5,6 +5,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import time
 
 import pytest
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QPixmap
+from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from kubescope.gabi import session as chat
@@ -682,7 +685,7 @@ def test_the_empty_chat_greets_with_the_name_and_the_company_and_gives_way(
     tab.show()
 
     assert tab.welcome.isVisible()
-    assert "Hi, I'm Gabi, from DCO Tecnologia" in tab.welcome.text()
+    assert "Hi, I'm Gabi, from DCO." in tab.welcome.text()
     assert tab.entries() == []  # the greeting is not a message: not kept, not sent
 
     _say(tab, "hi")
@@ -910,6 +913,60 @@ def test_compact_with_nothing_said_says_so_and_a_failure_says_why(replies) -> No
     _say(tab, "/compact")
     assert "could not be compacted: no quota" in tab.status.text()
     assert len(tab.session.messages) == 4  # it was left as it was
+
+
+def test_the_context_menu_compacts_now_or_turns_auto_compacting_off(
+    replies,
+) -> None:
+    queue, _prompts = replies
+    tab = _tab()
+    tab.session.messages = [
+        chat.Message("user", "one"),
+        chat.Message("assistant", "two"),
+    ]
+
+    menu = tab._context_menu()
+    now = next(action for action in menu.actions() if action.text() == "Compact now")
+    auto = next(
+        action for action in menu.actions() if action.text() == "Compact automatically"
+    )
+
+    assert now.isEnabled() and auto.isChecked()
+    auto.setChecked(False)
+    assert tab.auto_compact is False
+
+
+def test_the_context_ring_and_cache_indicator(replies, monkeypatch) -> None:
+    tab = _tab()
+    ring = tab.ring
+    ring.show()
+
+    for fraction in (0, 0.5, 0.75, 1, 2, -1):
+        ring.set_fraction(fraction)
+        ring.render(QPixmap(ring.size()))
+    assert ring.fraction == 0
+
+    clicked: list[bool] = []
+    ring.clicked.connect(lambda: clicked.append(True))
+    QTest.mouseClick(ring, Qt.MouseButton.LeftButton)
+    assert clicked == [True]
+    popup = QApplication.activePopupWidget()
+    if popup is not None:
+        popup.close()
+
+    monkeypatch.setattr(chat, "clock", lambda: 20)
+    tab.session.cache_ttl = 90
+    tab.session.answered_at = 0
+    tab.set_usage("", "tip")
+    assert tab.usage_label.isHidden() and ring.isHidden()
+    assert tab._cache_timer.isActive()
+    assert "Cache: it expires in 1 min" in ring.toolTip()
+
+    monkeypatch.setattr(chat, "clock", lambda: 110)
+    tab.set_usage("tokens", "tip")
+    assert not tab.usage_label.isHidden() and not ring.isHidden()
+    assert not tab._cache_timer.isActive()
+    assert "Cache expired: the next question writes it again" in ring.toolTip()
 
 
 def test_a_conversation_that_grew_is_compacted_before_the_next_question(

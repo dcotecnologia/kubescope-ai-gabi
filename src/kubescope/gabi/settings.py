@@ -77,6 +77,16 @@ class GabiSettings:
         self._store.set("programs", dict(value))
 
     @property
+    def auto_compact(self) -> bool:
+        """Whether a long conversation is compacted by itself; on unless the
+        person turned it off."""
+        return self._store.get("auto_compact", True) is not False
+
+    @auto_compact.setter
+    def auto_compact(self, value: bool) -> None:
+        self._store.set("auto_compact", bool(value))
+
+    @property
     def focus_mode(self) -> bool:
         """Whether the chat fills the page between the header and the footer of
         the window, in place of the corner panel; off unless the person turned

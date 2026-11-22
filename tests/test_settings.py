@@ -27,6 +27,7 @@ def test_the_defaults_are_a_chat_that_shows_and_nothing_chosen() -> None:
     found, _ = settings()
 
     assert found.assistant_enabled is True
+    assert found.auto_compact is True
     assert found.assistant == "" and found.assistant_consent is False
     assert found.assistant_models == found.assistant_efforts == {}
     assert found.assistant_programs == {} and found.assistant_panel == {}
@@ -42,10 +43,12 @@ def test_what_is_set_is_saved_and_read_back() -> None:
     found.assistant_efforts = {"codex": "high"}
     found.assistant_programs = {"claude": "/opt/claude/bin/claude"}
     found.assistant_panel = {"width": 500, "height": 520, "floating": True}
+    found.auto_compact = False
 
-    assert store.saved == 7
+    assert store.saved == 8
     again = GabiSettings(store)
     assert again.assistant_enabled is False and again.assistant == "claude"
+    assert again.auto_compact is False
     assert again.assistant_consent is True
     assert again.assistant_models == {"claude": "opus"}
     assert again.assistant_efforts == {"codex": "high"}
