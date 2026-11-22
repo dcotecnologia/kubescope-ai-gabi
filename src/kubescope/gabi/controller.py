@@ -68,6 +68,7 @@ class GabiController(QObject):
         self.history = History(port.history_path)
         self.tab: AssistantTab | None = None
         self._switching = False  # the assistant itself changes the context
+        self._settings_open = False  # the Settings have the page of the window
         self.dock = AssistantDock(port.central)
         self.dock.bubble.clicked.connect(self.toggle)
         self.dock.panel.closed.connect(self._put_away)
@@ -120,6 +121,7 @@ class GabiController(QObject):
         settings.assistant = assistant
         settings.focus_mode = focus
         self.dock.set_focus(focus)
+        self.dock.set_yielding(self._settings_open and focus)  # set from there
         self.dock.bubble.setVisible(enabled)
         self.make_room()
         if not enabled:
@@ -248,6 +250,12 @@ class GabiController(QObject):
         # the page is open for good: there is no button to open it
         self.dock.bubble.setVisible(self.port.settings.assistant_enabled and not page)
         self.show_usage()
+
+    def settings_shown(self, shown: bool) -> None:
+        """The Settings were opened or left: the chat that is the page steps
+        aside for them, and is back when they are left."""
+        self._settings_open = shown
+        self.dock.set_yielding(shown and self.dock.is_focused)
 
     def toggle_focus(self) -> None:
         """The focus mode: the chat takes the whole window, with the side menu

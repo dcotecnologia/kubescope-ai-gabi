@@ -711,3 +711,41 @@ def test_in_the_focus_mode_there_is_no_button_and_the_tokens_are_under_the_box(
     gabi.toggle_focus()
     assert not gabi.dock.bubble.isHidden() and agreed.smaller[-1] is False
     assert gabi.tab.usage_label.isHidden() and not gabi.dock.panel.usage.isHidden()
+
+
+def test_the_focus_page_steps_aside_for_the_settings_and_comes_back(agreed) -> None:
+    gabi = agreed.make()
+    gabi.toggle_focus()
+    panel = gabi.dock.panel
+    assert not panel.isHidden()
+
+    gabi.settings_shown(True)
+    assert panel.isHidden() and gabi.dock.is_open  # not closed, only aside
+
+    gabi.settings_shown(False)
+    assert not panel.isHidden() and panel.geometry().getRect() == (0, 40, 900, 500)
+
+
+def test_the_corner_panel_stays_over_the_settings(agreed) -> None:
+    gabi = agreed.make()
+    gabi.open()
+
+    gabi.settings_shown(True)
+    assert not gabi.dock.panel.isHidden() and not gabi.dock.is_yielding
+
+
+def test_turning_the_focus_on_from_the_settings_waits_for_them_to_be_left(
+    agreed,
+) -> None:
+    gabi = agreed.make()
+    gabi.settings_shown(True)
+
+    gabi.apply_settings(True, "", {}, {}, {}, True)  # the checkbox of Gabi's section
+    assert gabi.dock.is_open and gabi.dock.panel.isHidden()
+
+    gabi.settings_shown(False)
+    assert not gabi.dock.panel.isHidden()
+
+    gabi.settings_shown(True)
+    gabi.apply_settings(True, "", {}, {}, {}, False)  # and off again, from there
+    assert not gabi.dock.is_focused and not gabi.dock.panel.isHidden()

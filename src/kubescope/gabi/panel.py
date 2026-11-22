@@ -360,6 +360,9 @@ class AssistantDock(QObject):
         self._drag_start = QSize()
         self._floating = False
         self._focused = False  # the chat fills the page of the window
+        self._yielding = (
+            False  # the Settings have the page, for as long as they are open
+        )
         # where the pages are, as (x, y, width, height) in the host; the host
         # itself when it is not told
         self.content_area: Callable[[], tuple[int, int, int, int]] | None = None
@@ -409,10 +412,33 @@ class AssistantDock(QObject):
         if focused == self._focused:
             return
         self._focused = focused
+        if not focused:
+            self.set_yielding(False)
         self.panel.set_focused(focused)
         if self._open and not self._floating:
             self.panel.setGeometry(self._target())
         self.state_changed.emit()
+
+    @property
+    def is_yielding(self) -> bool:
+        return self._yielding
+
+    def set_yielding(self, yielding: bool) -> None:
+        """Step aside from the page, without closing, while something else of
+        the window (the Settings) has it, and take it back after."""
+        if yielding == self._yielding:
+            return
+        self._yielding = yielding
+        if not self._open or self._floating:
+            return
+        if yielding:
+            self._animation.stop()
+            cast(Any, self.panel).setGraphicsEffect(None)
+            self.panel.hide()
+        else:
+            self.panel.setGeometry(self._target())
+            self.panel.show()
+            self.panel.raise_()
 
     def _room(self) -> QSize:
         """The most the window leaves for the panel."""
@@ -490,6 +516,8 @@ class AssistantDock(QObject):
             return
         self._drag_start = QSize()
         self.panel.setGeometry(self._target())
+        if self._yielding:  # shown when the page is given back
+            return
         self.panel.show()
         self.panel.raise_()
         if ANIMATION_MS > 0:
@@ -622,7 +650,7 @@ class AssistantDock(QObject):
         ):
             self.panel.setGeometry(self._target())
         self.bubble.raise_()
-        if self._open and not self._floating:
+        if self._open and not self._floating and not self._yielding:
             self.panel.raise_()
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
