@@ -71,6 +71,7 @@ def _in_the_window(ctx: Context, settings: GabiSettings) -> None:
             content_area=lambda: ui.content_area(),
             smaller_window=lambda smaller: _smaller_window(ui.window, smaller),
             history_path=ctx.data_directory / "history.json",
+            notify=ui.show_system_notification,
         )
     )
     services.controller = controller

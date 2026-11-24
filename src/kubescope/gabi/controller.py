@@ -56,6 +56,9 @@ class GabiPort:
     content_area: Callable[[], tuple[int, int, int, int]]  # where the pages are
     smaller_window: Callable[[bool], None]  # let the window be made smaller, or not
     history_path: Path  # where the conversations are kept
+    # tell the person through the notices of the system; clicking one calls the
+    # function; False when the desktop cannot show one
+    notify: Callable[[str, str, Callable[[], None] | None], bool] = lambda *_: False
 
 
 class GabiController(QObject):
@@ -397,6 +400,7 @@ class GabiController(QObject):
             tab.kube_requested.connect(lambda: self._kube_report(tab))
             tab.changed.connect(lambda: self._keep_chat(tab))
             tab.usage_changed.connect(self.show_usage)
+            tab.activity_done.connect(self._activity_done)
             tab.auto_compact = self.port.settings.auto_compact
             tab.auto_compact_changed.connect(
                 lambda on: setattr(self.port.settings, "auto_compact", on)
@@ -410,6 +414,20 @@ class GabiController(QObject):
         self._sync_focus()
         self.show_usage()
         tab.input.setFocus()
+
+    def _looking(self) -> bool:
+        """Whether the person is looking at the chat: the window is the one in
+        front and the chat is on screen."""
+        tab = self.tab
+        return bool(
+            self.port.parent.isActiveWindow() and tab is not None and tab.isVisible()
+        )
+
+    def _activity_done(self, summary: str, ok: bool) -> None:
+        """The assistant is done: a notice of the system when nobody is
+        looking, which brings the chat forward when it is clicked."""
+        if not self._looking():
+            self.port.notify(NAME, summary, lambda: self.open(quiet=True))
 
     def engine(self, assistant: Assistant, model: str | None) -> str:
         """What answers, in words: the program, its model and its effort."""

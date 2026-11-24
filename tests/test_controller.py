@@ -40,6 +40,7 @@ class Setup:
         self.invoked: list[tuple] = []
         self.invoke_answer: object = None
         self.messages: list[tuple] = []
+        self.notices: list[tuple] = []  # of the system
         self.settings_shown = 0
         self.corners: list[int] = []
         self.menu_hidden: list[bool] = []
@@ -66,7 +67,12 @@ class Setup:
             content_area=lambda: (0, 40, 900, 500),
             smaller_window=self.smaller.append,
             history_path=tmp_path / "history.json",
+            notify=self.notify,
         )
+
+    def notify(self, title, message, on_click=None) -> bool:
+        self.notices.append((title, message, on_click))
+        return True
 
     def invoke(self, name, **arguments):
         self.invoked.append((name, arguments))
@@ -768,3 +774,45 @@ def test_outside_the_focus_mode_the_chat_stays_where_it_is_when_it_navigates(
     gabi._navigate(gabi.tab, Request(other, {}))
 
     assert not gabi.dock.panel.isHidden() and not gabi.dock.is_yielding
+
+
+def test_a_notice_is_sent_when_an_activity_ends_and_nobody_is_looking(
+    agreed, monkeypatch
+) -> None:
+    gabi = agreed.make()
+    gabi.open()
+    tab = gabi.tab
+    assert tab is not None
+
+    monkeypatch.setattr(agreed.parent, "isActiveWindow", lambda: False)
+    tab.activity_done.emit("It is a Pod.", True)  # another window is in front
+    monkeypatch.setattr(agreed.parent, "isActiveWindow", lambda: True)
+    tab.activity_done.emit("Seen.", True)  # the chat is on screen: nothing to tell
+    gabi.dock.panel.hide()
+    tab.activity_done.emit("It failed.", False)  # the chat is put away
+
+    assert [(title, message) for title, message, _click in agreed.notices] == [
+        ("Gabi", "It is a Pod."),
+        ("Gabi", "It failed."),
+    ]
+
+
+def test_clicking_the_notice_opens_the_chat(agreed, monkeypatch) -> None:
+    gabi = agreed.make()
+    gabi.open()
+    assert gabi.tab is not None
+    monkeypatch.setattr(agreed.parent, "isActiveWindow", lambda: False)
+    gabi.tab.activity_done.emit("Done.", True)
+    gabi.dock.panel.hide()
+    opened: list[bool] = []
+    monkeypatch.setattr(gabi, "open", lambda quiet=False: opened.append(quiet))
+
+    agreed.notices[-1][2]()
+
+    assert opened == [True]
+
+
+def test_without_a_chat_nobody_is_looking(agreed) -> None:
+    gabi = agreed.make()
+
+    assert gabi._looking() is False

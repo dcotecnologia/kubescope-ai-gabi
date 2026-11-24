@@ -282,6 +282,16 @@ class CompactWorker(QThread):
             self.failed.emit(str(error))
 
 
+SUMMARY = 140  # characters of an answer that a notice carries
+
+
+def summary_of(answer: str) -> str:
+    """The first line of an answer, cut to what a notice can hold."""
+    lines = [line.strip() for line in actions.strip(answer).splitlines()]
+    first = next((line for line in lines if line), "")
+    return first if len(first) <= SUMMARY else first[: SUMMARY - 1].rstrip() + "…"
+
+
 class AnswerWorker(QThread):
     """Ask the assistant and hand over the answer as it comes."""
 
@@ -352,6 +362,9 @@ class AssistantTab(QWidget):
     auto_compact_changed = Signal(bool)  # the person turned it on or off
     changed = Signal()  # the conversation has a new entry to keep
     usage_changed = Signal()  # an answer came: the tokens of the session grew
+    # the assistant is done with what was asked (the answer, or why there is none)
+    # and the success of it, for a notice when the person is not looking
+    activity_done = Signal(str, bool)
 
     def __init__(
         self,
@@ -1065,6 +1078,11 @@ class AssistantTab(QWidget):
             self.usage_changed.emit()
         if self._reader is None:
             self._set_busy(False)
+            if answer or self._failed:  # a worker that was stopped says nothing
+                self.activity_done.emit(
+                    self.status.text() if self._failed else summary_of(answer),
+                    not self._failed,
+                )
 
     def _act_on(self, answer: str) -> None:
         reads: list[Request] = []

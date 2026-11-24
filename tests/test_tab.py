@@ -1002,3 +1002,44 @@ def test_a_compaction_that_fails_before_a_question_stops_it(
 
     assert "down" in tab.status.text()
     assert len(prompts) == 3  # the question itself was not sent
+
+
+def test_the_end_of_an_activity_is_told_with_the_start_of_the_answer(replies) -> None:
+    queue, _prompts = replies
+    queue.append(["\n  It is ", "a Pod.\nThen more."])
+    tab = _tab()
+    told: list[tuple[str, bool]] = []
+    tab.activity_done.connect(lambda text, ok: told.append((text, ok)))
+
+    _say(tab, "what is x?")
+
+    assert told == [("It is a Pod.", True)]
+
+
+def test_a_failure_is_told_too_and_a_long_answer_is_cut(replies) -> None:
+    queue, _prompts = replies
+    queue.append(AssistantError("Not logged in"))
+    queue.append(["word " * 80])
+    tab = _tab()
+    told: list[tuple[str, bool]] = []
+    tab.activity_done.connect(lambda text, ok: told.append((text, ok)))
+
+    _say(tab, "why?")
+    _say(tab, "again")
+
+    assert told[0][1] is False and "Not logged in" in told[0][0]
+    assert told[1][1] is True and told[1][0].endswith("…")
+    assert len(told[1][0]) <= assistant_tab.SUMMARY
+
+
+def test_a_stopped_activity_and_an_empty_answer_tell_nothing(replies) -> None:
+    queue, _prompts = replies
+    queue.append([])
+    tab = _tab()
+    told: list[object] = []
+    tab.activity_done.connect(lambda *args: told.append(args))
+
+    _say(tab, "hello?")
+
+    assert told == []
+    assert assistant_tab.summary_of("") == ""
