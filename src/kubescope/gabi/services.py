@@ -1,10 +1,8 @@
 """What the app lends to Gabi, once she is activated.
 
 `activate(ctx)` hands the context to `install`, and the rest of the code
-asks for the cluster, the changes to it and the colors of the theme
-here, so that it never reaches into the app. Before she is activated (or
-without a window, in the terminal) the colors are what they are written
-as.
+asks for the cluster and the changes to it here, so that it never
+reaches into the app.
 """
 
 from typing import Any
@@ -35,9 +33,3 @@ def cluster() -> ClusterAccess:
 def writes() -> Writes:
     """The changes to a cluster, which refuse unless the write mode is on."""
     return context().writes
-
-
-def themed(color: str, text: bool = False) -> str:
-    """A color as the theme in use shows it."""
-    ui = _context.ui if _context is not None else None
-    return ui.themed(color, text) if ui is not None else color

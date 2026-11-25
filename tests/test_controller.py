@@ -163,6 +163,7 @@ def test_the_theme_and_the_language_reach_the_dock_and_the_chat(agreed) -> None:
     gabi.open()
 
     gabi.restyle()  # with a chat open too
+    gabi.retranslate()  # and its words said again
 
     assert gabi.tab is not None
 

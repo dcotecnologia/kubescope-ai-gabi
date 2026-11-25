@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-25
+
+### Fixed
+
+- Her tests cover the language, the composer and the menu of the ring, and the unused `themed` helper is gone, so the coverage of the CI is whole by @danilogco
+
 ## [1.5.0] - 2026-11-25
 
 ### Changed
@@ -71,7 +77,8 @@ All notable changes to this project will be documented in this file. The format 
 
 - Gabi as an extension of her own project, written against the KubeScope SDK only: the chat in the corner of the window, her section of the Settings, her shortcut and the terminal commands `chat` and `assistant`
 
-[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.2.1...v1.3.0

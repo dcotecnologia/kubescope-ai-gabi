@@ -1,6 +1,6 @@
 [project]
 name = "kubescope-gabi"
-version = "1.5.0"
+version = "1.5.1"
 description = "Gabi, the assistant of KubeScope: ask about your cluster from a coding assistant installed on your computer"
 readme = "README.md"
 license = "MIT"

@@ -875,3 +875,11 @@ def test_the_enter_of_the_field_sends_the_question(replies) -> None:
 
     assert len(prompts) == 1 and "first line\nsecond" in prompts[0]
     assert tab.input.toPlainText() == ""
+
+
+def test_the_language_the_composer_and_the_menu_of_the_ring_reach_the_chat() -> None:
+    tab = _tab()
+    tab.retranslate()  # the words of the chat are said again
+    assert tab.composer is tab.view.composer
+    tab._show_context_menu()  # the menu of the ring opens
+    tab._menu.close()
