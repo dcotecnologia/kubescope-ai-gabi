@@ -12,11 +12,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from kubescope.sdk import App
+from kubescope.sdk import App, translate
 from kubescope.sdk.errors import first_line
-from PySide6.QtCore import QObject, QUrl
-from PySide6.QtGui import QDesktopServices
-from PySide6.QtWidgets import QMessageBox, QWidget
 
 from kubescope.gabi import ASSISTANTS, runner, services
 from kubescope.gabi import actions as assistant_actions
@@ -24,7 +21,6 @@ from kubescope.gabi import installed as installed_assistants
 from kubescope.gabi.dispatch import write_call
 from kubescope.gabi.history import History
 from kubescope.gabi.knowledge import system_prompt
-from kubescope.gabi.panel import BUBBLE, MARGIN, AssistantDock
 from kubescope.gabi.runner import NAME, Assistant
 from kubescope.gabi.runner import (
     is_available as is_available_assistant,
@@ -35,6 +31,28 @@ from kubescope.gabi.tab import AssistantTab
 from kubescope.gabi.usage import compact
 
 
+def dock_texts() -> dict[str, str]:
+    """The words of the button and the panel in the language of the app, by
+    their English text."""
+    return {
+        "Ask Gabi": translate("AssistantDock", "Ask Gabi"),
+        "Put it back in the window": translate(
+            "AssistantPanel", "Put it back in the window"
+        ),
+        "Open in a window of its own": translate(
+            "AssistantPanel", "Open in a window of its own"
+        ),
+        "Settings": translate("AssistantPanel", "Settings"),
+        "Clear history": translate("AssistantPanel", "Clear history"),
+        "Close": translate("AssistantPanel", "Close"),
+        "New session": translate("AssistantPanel", "New session"),
+        "Leave the focus mode": translate("AssistantPanel", "Leave the focus mode"),
+        "Focus mode: the chat fills the page": translate(
+            "AssistantPanel", "Focus mode: the chat fills the page"
+        ),
+    }
+
+
 @dataclass
 class GabiPort:
     """What the extension lends to Gabi; every call is looked up when it is
@@ -42,14 +60,14 @@ class GabiPort:
 
     settings: GabiSettings  # her own preferences
     app: App  # the write mode and the language of the app
-    parent: QWidget  # the window: the parent of the boxes it shows
-    central: QWidget  # where the panel and the button of the corner sit
+    components: Any  # the elements of the app: the boxes, the links
+    parent: Any  # the window: the parent of the boxes it shows
+    central: Any  # where the panel and the button of the corner sit
     invoke: Callable[..., Any]  # a command of the window, by name
     context: Callable[[], str]  # the cluster context the window is on
     screen: Callable[[], str]  # what the window shows, in words
-    show_message: Callable[[QMessageBox.Icon, str, str], None]
+    show_message: Callable[[str, str, str], None]  # information, warning, critical
     run_action: Callable[..., None]  # a function off the UI thread
-    style_box: Callable[[QMessageBox], None]  # the window's own buttons
     show_settings: Callable[[], None]  # the Settings, on the section of Gabi
     reserve_corner: Callable[[int], None]  # keep this many pixels of the corner clear
     hide_side_menu: Callable[[bool], None]  # hide the side menu, or give it back
@@ -61,9 +79,8 @@ class GabiPort:
     notify: Callable[[str, str, Callable[[], None] | None], bool] = lambda *_: False
 
 
-class GabiController(QObject):
+class GabiController:
     def __init__(self, port: GabiPort) -> None:
-        super().__init__(port.parent)
         self.port = port
         runner.CUSTOM_PROGRAMS.clear()
         runner.CUSTOM_PROGRAMS.update(port.settings.assistant_programs)
@@ -73,7 +90,7 @@ class GabiController(QObject):
         self._switching = False  # the assistant itself changes the context
         self._settings_open = False  # the Settings have the page of the window
         self._navigated = False  # the assistant took the person to a page
-        self.dock = AssistantDock(port.central)
+        self.dock = port.components.chat_dock(port.central, NAME, dock_texts())
         self.dock.bubble.clicked.connect(self.toggle)
         self.dock.panel.closed.connect(self._put_away)
         self.dock.panel.new_session_requested.connect(self.new_session)
@@ -139,7 +156,9 @@ class GabiController(QObject):
 
     def retranslate(self) -> None:
         """The language changed."""
-        self.dock.retranslate()
+        self.dock.retranslate(dock_texts())
+        if self.tab is not None:
+            self.tab.retranslate()
 
     def context_changed(self) -> None:
         """The window moved to another context: a chat belongs to one cluster,
@@ -187,10 +206,11 @@ class GabiController(QObject):
     def _consent(self, assistant: Assistant) -> bool:
         """Ask once whether what the assistant is told may leave this
         computer."""
-        answer = QMessageBox.question(
+        answer = self.port.components.ask(
             self.port.parent,
-            self.tr("Assistant"),
-            self.tr(
+            translate("GabiController", "Assistant"),
+            translate(
+                "GabiController",
                 "What you type and attach, and what the assistant reads from the "
                 "cluster to answer (resource documents and log lines), are sent to "
                 "{name}, "
@@ -198,12 +218,10 @@ class GabiController(QObject):
                 "values are hidden and tokens and keys are redacted, but other "
                 "text of a log can still go. Changes to the cluster are asked of "
                 "you before they run, and only with the write mode on.\n\n"
-                "Use the assistant?"
+                "Use the assistant?",
             ).format(name=assistant.name),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
         )
-        if answer != QMessageBox.StandardButton.Yes:
+        if not answer:
             return False
         self.port.settings.assistant_consent = True
         return True
@@ -242,7 +260,7 @@ class GabiController(QObject):
                 tab.note
                 if tab is not None
                 else lambda message: self.port.show_message(
-                    QMessageBox.Icon.Warning, self.tr("Assistant"), message
+                    "warning", translate("GabiController", "Assistant"), message
                 )
             )
             self.port.invoke("open_page", page="overview", report=report)
@@ -330,28 +348,38 @@ class GabiController(QObject):
             return
         used = tab.session.usage
         if tab.session.cache_left() == 0:  # it was kept for a while and that is over
-            text = self.tr("{context} in · {output} out · cache expired").format(
-                context=compact(used.context), output=compact(used.output_tokens)
-            )
+            text = translate(
+                "GabiController", "{context} in · {output} out · cache expired"
+            ).format(context=compact(used.context), output=compact(used.output_tokens))
         else:
-            text = self.tr("{context} in · {output} out · {cache}% cached").format(
+            text = translate(
+                "GabiController", "{context} in · {output} out · {cache}% cached"
+            ).format(
                 context=compact(used.context),
                 output=compact(used.output_tokens),
                 cache=round(used.cache_hit * 100),
             )
         last = tab.session.last_usage
         lines = [
-            self.tr("Tokens of this session"),
-            self.tr("Input: {n}").format(n=used.input_tokens),
-            self.tr("Output: {n}").format(n=used.output_tokens),
-            self.tr("Read from the cache: {n}").format(n=used.cache_read),
-            self.tr("Written to the cache: {n}").format(n=used.cache_write),
-            self.tr("Last answer: {context} in, {output} out").format(
-                context=last.context, output=last.output_tokens
+            translate("GabiController", "Tokens of this session"),
+            translate("GabiController", "Input: {n}").format(n=used.input_tokens),
+            translate("GabiController", "Output: {n}").format(n=used.output_tokens),
+            translate("GabiController", "Read from the cache: {n}").format(
+                n=used.cache_read
             ),
+            translate("GabiController", "Written to the cache: {n}").format(
+                n=used.cache_write
+            ),
+            translate(
+                "GabiController", "Last answer: {context} in, {output} out"
+            ).format(context=last.context, output=last.output_tokens),
         ]
         if used.cost is not None:
-            lines.append(self.tr("Cost: ${cost}").format(cost=f"{used.cost:.4f}"))
+            lines.append(
+                translate("GabiController", "Cost: ${cost}").format(
+                    cost=f"{used.cost:.4f}"
+                )
+            )
         tip = "\n".join(lines)
         tab.set_usage(text, tip)
 
@@ -379,9 +407,9 @@ class GabiController(QObject):
 
     def _no_context(self) -> None:
         self.port.show_message(
-            QMessageBox.Icon.Information,
-            self.tr("Assistant"),
-            self.tr("Choose a context first."),
+            "information",
+            translate("GabiController", "Assistant"),
+            translate("GabiController", "Choose a context first."),
         )
 
     def _open_chat(self, assistant: Assistant) -> None:
@@ -392,6 +420,7 @@ class GabiController(QObject):
                 session,
                 self.port.context(),
                 lambda: self.port.app.write_mode,
+                self.port.components,
                 screen=self.port.screen,
                 history=self.history.entries(self.port.context()),
                 takes_images=assistant.takes_images,
@@ -408,7 +437,7 @@ class GabiController(QObject):
             tab.navigate.connect(lambda request: self._navigate(tab, request))
             tab.write.connect(lambda request: self._write(tab, request))
             self.tab = tab
-            self.dock.panel.show_chat(tab)
+            self.dock.panel.show_chat(tab.widget)
             self.show_engine()
         self.dock.open()
         self._sync_focus()
@@ -420,7 +449,9 @@ class GabiController(QObject):
         front and the chat is on screen."""
         tab = self.tab
         return bool(
-            self.port.parent.isActiveWindow() and tab is not None and tab.isVisible()
+            self.port.parent.isActiveWindow()
+            and tab is not None
+            and tab.widget.isVisible()
         )
 
     def _activity_done(self, summary: str, ok: bool) -> None:
@@ -438,8 +469,8 @@ class GabiController(QObject):
         return " · ".join(
             (
                 assistant.name,
-                chosen or self.tr("unknown model"),
-                effort or self.tr("unknown effort"),
+                chosen or translate("GabiController", "unknown model"),
+                effort or translate("GabiController", "unknown effort"),
             )
         )
 
@@ -543,13 +574,13 @@ class GabiController(QObject):
         self.dock.panel.set_engine("")
         if tab is not None:
             tab.shutdown()
-            tab.deleteLater()
+            tab.widget.deleteLater()
 
     def make_room(self) -> None:
         """Keep what is at the right of the footer and of the note under the
         lists clear of the button of the assistant, which sits in that
         corner."""
-        gutter = BUBBLE + MARGIN if self.port.settings.assistant_enabled else 0
+        gutter = self.dock.gutter if self.port.settings.assistant_enabled else 0
         self.port.reserve_corner(gutter)
 
     def _keep_panel(self) -> None:
@@ -562,14 +593,10 @@ class GabiController(QObject):
 
     def _forget(self, context: str | None, text: str) -> None:
         """Ask, then forget the conversation of a context, or all of them."""
-        answer = QMessageBox.question(
-            self.port.parent,
-            self.tr("Assistant"),
-            text,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+        answer = self.port.components.ask(
+            self.port.parent, translate("GabiController", "Assistant"), text
         )
-        if answer != QMessageBox.StandardButton.Yes:
+        if not answer:
             return
         self.end_chat()
         self.history.clear(context)
@@ -580,12 +607,20 @@ class GabiController(QObject):
         """Forget the conversation of this context."""
         self._forget(
             self.port.context(),
-            self.tr("Forget the conversation with the assistant in this context?"),
+            translate(
+                "GabiController",
+                "Forget the conversation with the assistant in this context?",
+            ),
         )
 
     def clear_history(self) -> None:
         """Forget every conversation, from the settings."""
-        self._forget(None, self.tr("Forget every conversation with the assistant?"))
+        self._forget(
+            None,
+            translate(
+                "GabiController", "Forget every conversation with the assistant?"
+            ),
+        )
 
     def _guide_setup(self) -> None:
         """There is no program to run Gabi on: say what to install, offer the
@@ -596,7 +631,8 @@ class GabiController(QObject):
             if self.port.settings.assistant_programs.get(one.key)
             and not is_available_assistant(one)
         ]
-        steps = self.tr(
+        steps = translate(
+            "GabiController",
             "KubeScope found neither of them on this computer. They are programs "
             "that you install and sign in to yourself, as you would in a terminal; "
             "KubeScope asks for no credentials and stores none.\n\n"
@@ -604,37 +640,38 @@ class GabiController(QObject):
             "in.\n"
             "2. If it is installed where the system does not look, tell KubeScope "
             "where in Settings.\n"
-            "3. Open this button again."
+            "3. Open this button again.",
         )
         if broken:
-            steps += "\n\n" + self.tr(
-                "The path set for {names} is not a program that can be run."
+            steps += "\n\n" + translate(
+                "GabiController",
+                "The path set for {names} is not a program that can be run.",
             ).format(names=", ".join(broken))
-        box = QMessageBox(self.port.parent)
-        box.setIcon(QMessageBox.Icon.Information)
-        box.setWindowTitle(NAME)
-        box.setText(self.tr("{name} needs Claude Code or Codex.").format(name=NAME))
-        box.setInformativeText(steps)
-        settings = box.addButton(
-            self.tr("Open Settings"), QMessageBox.ButtonRole.AcceptRole
-        )
         language = self.port.app.resolved_language
+        buttons: list[tuple[str, Callable[[], None]]] = [
+            (translate("GabiController", "Open Settings"), self.port.show_settings)
+        ]
         for one in ASSISTANTS.values():
             if one.guide is not None:
                 address = one.guide(language)
-                button = box.addButton(
-                    self.tr("{name} guide").format(name=one.name),
-                    QMessageBox.ButtonRole.ActionRole,
-                )
-                button.clicked.connect(
-                    lambda _checked=False, url=address: QDesktopServices.openUrl(
-                        QUrl(url)
+                buttons.append(
+                    (
+                        translate("GabiController", "{name} guide").format(
+                            name=one.name
+                        ),
+                        lambda url=address: self.port.components.open_url(url),
                     )
                 )
-        box.addButton(self.tr("Close"), QMessageBox.ButtonRole.RejectRole)
-        settings.clicked.connect(self.port.show_settings)
-        self.port.style_box(box)
-        box.exec()
+        self.port.components.guide(
+            self.port.parent,
+            NAME,
+            translate("GabiController", "{name} needs Claude Code or Codex.").format(
+                name=NAME
+            ),
+            steps,
+            buttons,
+            translate("GabiController", "Close"),
+        )
 
     def _navigate(self, tab: AssistantTab, request: assistant_actions.Request) -> None:
         """Do in the window what the assistant asked, as the person would."""
@@ -657,15 +694,21 @@ class GabiController(QObject):
         what = assistant_actions.describe(request)
         if not self.port.app.write_mode:
             tab.note(
-                self.tr("Not run, the write mode is off: {what}").format(what=what)
+                translate(
+                    "GabiController", "Not run, the write mode is off: {what}"
+                ).format(what=what)
             )
             return
         function, arguments = write_call(request, tab.context)
         self.port.run_action(
             function,
-            lambda _result: tab.note(self.tr("Done: {what}").format(what=what)),
+            lambda _result: tab.note(
+                translate("GabiController", "Done: {what}").format(what=what)
+            ),
             *arguments,
             on_error=lambda message: tab.note(
-                self.tr("Failed: {what}\n{message}").format(what=what, message=message)
+                translate("GabiController", "Failed: {what}\n{message}").format(
+                    what=what, message=message
+                )
             ),
         )

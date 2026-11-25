@@ -1,20 +1,16 @@
-import os
-
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
 import dataclasses
 
 import pytest
-from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
+from kubescope.extensions import testing
+from kubescope.extensions.components import UiComponents
 
 from kubescope.gabi import ASSISTANTS, controller, runner
 from kubescope.gabi.actions import BY_NAME, Request
 from kubescope.gabi.controller import GabiController, GabiPort
-from kubescope.gabi.panel import BUBBLE, MARGIN
 from kubescope.gabi.settings import GabiSettings
 from tests.conftest import Store
 
-application = QApplication.instance() or QApplication([])
+application = testing.application()
 CLAUDE = ASSISTANTS["claude"]
 CODEX = ASSISTANTS["codex"]
 
@@ -32,8 +28,10 @@ class Setup:
         self.settings = GabiSettings(Store())
         self.settings.assistant_enabled = True
         self.app = FakeApp()
-        self.parent = QWidget()
-        self.central = QWidget(self.parent)
+        self.components = UiComponents()
+        self.parent = self.components.widget()
+        self.central = self.components.widget()
+        self.central.setParent(self.parent)
         self.parent.resize(900, 600)
         self.parent.show()
         self.context = "prod"
@@ -49,6 +47,7 @@ class Setup:
         self.port = GabiPort(
             settings=self.settings,
             app=self.app,  # type: ignore[arg-type]
+            components=self.components,
             parent=self.parent,
             central=self.central,
             invoke=self.invoke,
@@ -58,7 +57,6 @@ class Setup:
                 (icon, title, text)
             ),
             run_action=self.run_action,
-            style_box=lambda box: None,
             show_settings=lambda: setattr(
                 self, "settings_shown", self.settings_shown + 1
             ),
@@ -114,11 +112,11 @@ def agreed(setup):
 def answer(monkeypatch, yes: bool) -> list[str]:
     asked: list[str] = []
 
-    def question(parent, title, text, *args, **kwargs):
+    def question(_self, parent, title, text):
         asked.append(text)
-        return QMessageBox.StandardButton.Yes if yes else QMessageBox.StandardButton.No
+        return yes
 
-    monkeypatch.setattr(QMessageBox, "question", staticmethod(question))
+    monkeypatch.setattr(UiComponents, "ask", question)
     return asked
 
 
@@ -126,7 +124,7 @@ def test_the_button_and_the_corner_follow_the_setting(setup) -> None:
     gabi = setup.make()
 
     assert gabi.dock.bubble.isVisibleTo(setup.central)
-    assert setup.corners[-1] == BUBBLE + MARGIN
+    assert setup.corners[-1] == gabi.dock.gutter
 
     setup.settings.assistant_enabled = False
     gabi.make_room()
@@ -240,30 +238,23 @@ def test_without_a_program_the_person_is_guided(setup, monkeypatch) -> None:
     gabi = setup.make()
     seen: dict = {}
 
-    def run(box) -> int:
-        seen["text"] = box.informativeText()
-        seen["buttons"] = [button.text() for button in box.buttons()]
-        seen["settings"] = next(b for b in box.buttons() if b.text() == "Open Settings")
-        seen["settings"].click()
-        guide = next(b for b in box.buttons() if b.text().endswith("guide"))
-        opened: list[str] = []
-        monkeypatch.setattr(
-            controller.QDesktopServices,
-            "openUrl",
-            staticmethod(lambda url: opened.append(url.toString()) or True),
-        )
-        guide.click()
-        seen["opened"] = opened
-        return 0
+    opened: list[str] = []
 
-    monkeypatch.setattr(QMessageBox, "exec", run)
+    def guide(_self, parent, title, text, detail, buttons, close_text):
+        seen["text"] = detail
+        seen["buttons"] = [label for label, _run in buttons] + [close_text]
+        buttons[0][1]()  # Open Settings
+        next(run for label, run in buttons if label.endswith("guide"))()
+
+    monkeypatch.setattr(UiComponents, "guide", guide)
+    monkeypatch.setattr(UiComponents, "open_url", lambda _self, url: opened.append(url))
 
     gabi.open()
 
     assert "neither of them" in seen["text"] and "Claude Code" in seen["text"]
     assert "The path set for" in seen["text"]
     assert "Close" in seen["buttons"] and setup.settings_shown == 1
-    assert seen["opened"] and seen["opened"][0].startswith("https://")
+    assert opened and opened[0].startswith("https://")
 
 
 def test_opening_makes_the_chat_once_and_reuses_it(agreed) -> None:

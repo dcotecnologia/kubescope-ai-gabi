@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-25
+
+### Changed
+
+- She imports nothing from `PySide6`, in her code or in her tests: the chat (the panel in the corner, the conversation, the composer, the attachments and the ring of the context) is the one of the app, through `ctx.ui.components`, and she only says what the conversation does, with `background` for the answers; her section of the Settings is built with the elements of the app, through `ctx.ui.components` (SDK 1.12 and KubeScope 2.9): its fields, selects, buttons, check boxes and notes, so it has no copy of them by @danilogco
+
 ## [1.4.0] - 2026-11-24
 
 ### Changed
@@ -65,7 +71,8 @@ All notable changes to this project will be documented in this file. The format 
 
 - Gabi as an extension of her own project, written against the KubeScope SDK only: the chat in the corner of the window, her section of the Settings, her shortcut and the terminal commands `chat` and `assistant`
 
-[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.2.0...v1.2.1

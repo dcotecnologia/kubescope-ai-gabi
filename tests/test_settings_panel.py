@@ -1,23 +1,13 @@
-import os
-
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
 import pytest
-from PySide6.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QComboBox,
-    QFileDialog,
-    QLabel,
-    QWidget,
-)
+from kubescope.extensions import testing
+from kubescope.extensions.components import UiComponents
 
 from kubescope.gabi import settings_panel
 from kubescope.gabi.runner import Assistant
 from kubescope.gabi.settings import GabiSettings
 from kubescope.gabi.settings_panel import GabiSettingsPanel
 
-application = QApplication.instance() or QApplication([])
+application = testing.application()
 
 ONE = Assistant("one", "One", "one-ai", lambda m, s: [], lambda line: ("", ""))
 MANY = Assistant(
@@ -53,7 +43,7 @@ class Setup:
         self.notices: list[str] = []
         self.cleared = 0
         self.panel = GabiSettingsPanel(
-            self.settings, self.apply, self.notices.append, self.clear
+            UiComponents(), self.settings, self.apply, self.notices.append, self.clear
         )
         self.panel.load()
 
@@ -74,7 +64,7 @@ def setup(monkeypatch):
     return Setup(monkeypatch)
 
 
-def combos(setup: Setup, key: str) -> tuple[QComboBox, QComboBox]:
+def combos(setup: Setup, key: str) -> tuple:
     return setup.panel._models[key]
 
 
@@ -202,7 +192,7 @@ def test_browsing_fills_the_path_and_cancelling_changes_nothing(
     setup, monkeypatch, tmp_path
 ) -> None:
     chosen = [str(tmp_path / "one-ai"), ""]
-    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *_a: (chosen.pop(0), ""))
+    monkeypatch.setattr(UiComponents, "open_file", lambda _self, *_a: chosen.pop(0))
     edit = setup.panel._paths["one"]
 
     setup.panel._browse(edit, "One")
@@ -220,14 +210,14 @@ def test_the_button_forgets_the_conversations(setup) -> None:
 def test_the_panel_explains_where_the_conversations_and_the_credentials_go(
     setup,
 ) -> None:
-    text = " ".join(label.text() for label in setup.panel.findChildren(QLabel))
+    text = " ".join(testing.texts(setup.panel.widget))
 
     assert "asks you for no credentials and stores none" in text
     assert "kept on this computer" in text
-    assert isinstance(setup.panel, QWidget)
+    assert setup.panel.widget is not None
 
 
 def test_focus_mode_is_only_controlled_from_the_chat_header(setup) -> None:
-    assert [checkbox.text() for checkbox in setup.panel.findChildren(QCheckBox)] == [
+    assert testing.texts(setup.panel.widget, "check") == [
         "Show the assistant, a chat in the corner of the window"
     ]

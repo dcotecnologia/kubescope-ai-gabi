@@ -1,22 +1,23 @@
-import os
-
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
 import time
 
 import pytest
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
-from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication
+from kubescope.extensions import testing
+from kubescope.extensions.components import UiComponents
 
 from kubescope.gabi import session as chat
 from kubescope.gabi import tab as assistant_tab
 from kubescope.gabi.runner import Assistant, AssistantError
 from kubescope.gabi.session import ChatSession
-from kubescope.gabi.tab import AnswerWorker, AssistantTab, ReadWorker
+from kubescope.gabi.tab import AssistantTab as _AssistantTab
 
-application = QApplication.instance() or QApplication([])
+application = testing.application()
+
+
+def AssistantTab(*args, **kwargs):  # noqa: N802
+    """A tab with the real components of the app."""
+    return _AssistantTab(*args, components=UiComponents(), **kwargs)
+
+
 FAKE = Assistant("fake", "Fake", "fake-ai", lambda m, s: [], lambda line: ("", ""))
 
 
@@ -24,7 +25,7 @@ def _block(document: str) -> str:
     return f"```kubescope-action\n{document}\n```\n"
 
 
-def settle(tab: AssistantTab) -> None:
+def settle(tab: _AssistantTab) -> None:
     deadline = time.monotonic() + 5
     while tab.busy and time.monotonic() < deadline:
         application.processEvents()
@@ -50,12 +51,12 @@ def replies(monkeypatch):
     return queue, prompts
 
 
-def _tab(write_mode=True, fetch=None) -> AssistantTab:
+def _tab(write_mode=True, fetch=None) -> _AssistantTab:
     kwargs = {"fetch": fetch} if fetch else {}
     return AssistantTab(ChatSession(FAKE), "ctx", lambda: write_mode, **kwargs)
 
 
-def _card(tab: AssistantTab):
+def _card(tab: _AssistantTab):
     item = tab.cards.itemAt(0)
     assert item is not None
     card = item.widget()
@@ -63,7 +64,7 @@ def _card(tab: AssistantTab):
     return card
 
 
-def _say(tab: AssistantTab, text: str) -> None:
+def _say(tab: _AssistantTab, text: str) -> None:
     tab.input.setPlainText(text)
     tab.send_button.click()
     settle(tab)
@@ -137,14 +138,14 @@ def test_a_change_waits_for_the_person_and_can_be_run_or_cancelled(replies) -> N
     _say(tab, "scale web")
     assert tab.cards.count() == 1 and confirmed == []
     card = _card(tab)
-    buttons = card.findChildren(assistant_tab.QPushButton)
+    buttons = testing.find_all(card, "button")
     buttons[0].click()  # Run
     assert [request.action.name for request in confirmed] == ["scale"]
     assert tab.cards.count() == 0
 
     _say(tab, "again")
     card = _card(tab)
-    card.findChildren(assistant_tab.QPushButton)[1].click()  # Cancel
+    testing.find_all(card, "button")[1].click()  # Cancel
     assert tab.cards.count() == 0 and len(confirmed) == 1
 
 
@@ -253,26 +254,10 @@ def test_the_assistant_cannot_keep_reading_forever(replies) -> None:
     assert tab.send_button.isEnabled()
 
 
-def test_a_worker_that_was_stopped_sends_nothing_and_closes_the_answer(
-    replies,
-) -> None:
-    queue, _prompts = replies
-    queue.append(["one", "two"])
-    worker = AnswerWorker(ChatSession(FAKE), "why?")
-    pieces: list[str] = []
-    worker.piece.connect(pieces.append)
-    worker.stopped = True
-
-    worker.run()
-
-    assert pieces == []
-    _tab().stop()  # nothing running: nothing to stop
-
-
 def test_the_chat_goes_to_the_newest_message_and_keeps_the_sides(replies) -> None:
     tab = _tab()
-    tab.resize(400, 300)
-    tab.show()
+    tab.widget.resize(400, 300)
+    tab.widget.show()
     for number in range(40):
         tab.note(f"line {number}")
     for _ in range(10):  # the layout settles over a few turns of the loop
@@ -291,10 +276,10 @@ def test_the_chat_goes_to_the_newest_message_and_keeps_the_sides(replies) -> Non
 
     first = tab._bubbles[0]
     assert first.maximumWidth() <= int(tab.thread_scroll.viewport().width() * 0.82) + 1
-    tab.resize(700, 300)
+    tab.widget.resize(700, 300)
     application.processEvents()
     assert tab._bubbles[0].maximumWidth() > first.maximumWidth() - 1
-    tab.close()
+    tab.widget.close()
 
 
 def test_closing_the_tab_stops_what_is_running(replies) -> None:
@@ -308,9 +293,7 @@ def test_closing_the_tab_stops_what_is_running(replies) -> None:
     assert tab.closed
     settle(tab)
 
-    reader = ReadWorker(lambda: "x")
-    tab._reader = reader
-    reader.start()
+    tab._reader = tab._components.background(lambda: time.sleep(0.05))
     tab.shutdown()
     tab._reader = None
     _tab().shutdown()  # nothing running
@@ -363,8 +346,8 @@ def test_what_the_person_writes_is_on_the_right_and_the_rest_on_the_left(
     queue, _prompts = replies
     queue.append(["**bold** answer"])
     tab = _tab()
-    tab.resize(500, 400)
-    tab.show()
+    tab.widget.resize(500, 400)
+    tab.widget.show()
 
     _say(tab, "hello")
     tab.note("noted")
@@ -376,9 +359,9 @@ def test_what_the_person_writes_is_on_the_right_and_the_rest_on_the_left(
 
     mine, answer, noted = tab._bubbles
     assert [side(b) for b in (mine, answer, noted)] == ["right", "left", "left"]
-    assert tab._labels[0].textFormat() == assistant_tab.Qt.TextFormat.PlainText
-    assert tab._labels[1].textFormat() == assistant_tab.Qt.TextFormat.MarkdownText
-    tab.close()
+    assert "Plain" in str(tab._labels[0].textFormat())
+    assert "Markdown" in str(tab._labels[1].textFormat())
+    tab.widget.close()
 
 
 def test_the_conversation_comes_back_from_the_history_and_goes_to_it(replies) -> None:
@@ -440,18 +423,14 @@ def test_the_chat_takes_its_colors_from_the_theme_and_follows_a_change(
     assert dark != light and tab.thread_view.color.name() != wall
     assert theme.themed("#e5f4eb") in dark[1]  # the bubble of the person
     assert theme.themed("#ffffff") in dark[2]  # the bubble of the others
-    stamp = tab._bubble_info[1][1]
+    stamp = tab.view._bubble_info[1][1]
     assert stamp is not None and theme.themed("#176b58") in stamp.text()
     assert theme.themed("#3020a5") in tab.send_button.styleSheet()  # as Save changes
     monkeypatch.setattr(theme, "_active", theme.LIGHT_THEME)
 
 
 def _picture(path, color="red") -> None:
-    from PySide6.QtGui import QColor, QImage
-
-    image = QImage(300, 200, QImage.Format.Format_RGB32)
-    image.fill(QColor(color))
-    assert image.save(str(path))
+    testing.write_png(path, width=30, height=20)
 
 
 def test_the_plus_picks_files_that_wait_as_chips_until_the_question_goes(
@@ -459,21 +438,13 @@ def test_the_plus_picks_files_that_wait_as_chips_until_the_question_goes(
 ) -> None:
     queue, prompts = replies
     queue.append(["I see."])
-    seen: list = []
-    monkeypatch.setattr(
-        assistant_tab.ChatInput, "canInsertFromMimeData", lambda *_a: True
-    )
     log = tmp_path / "app.log"
     log.write_text("boom\n", encoding="utf-8")
     shot = tmp_path / "shot.png"
     _picture(shot)
-    monkeypatch.setattr(
-        assistant_tab.QFileDialog,
-        "getOpenFileNames",
-        lambda *_a: ([str(log), str(shot)], ""),
-    )
     tab = _tab()
-    tab.show()
+    tab.view.choose_files = lambda title, patterns: [log, shot]
+    tab.widget.show()
 
     tab.attach_button.click()
 
@@ -490,14 +461,13 @@ def test_the_plus_picks_files_that_wait_as_chips_until_the_question_goes(
     first = tab._bubbles[0]
     assert any(
         label.pixmap() is not None and not label.pixmap().isNull()
-        for label in first.findChildren(assistant_tab.QLabel)
+        for label in testing.find_all(first, "label")
     )
     assert tab.entries()[0] == (
         "user",
         "what is this?\n(attached: app.log, shot.png)",
     )
-    del seen
-    tab.close()
+    tab.widget.close()
 
 
 def test_a_chip_can_be_taken_off_and_a_question_can_be_only_the_files(
@@ -558,101 +528,7 @@ def test_an_assistant_that_takes_text_only_refuses_images(tmp_path) -> None:
     assert tab.status.isHidden()  # the notice went away with a good attachment
 
 
-def test_a_picture_pasted_into_the_field_is_attached_and_text_is_pasted_as_text(
-    monkeypatch,
-) -> None:
-    from PySide6.QtCore import QMimeData
-    from PySide6.QtGui import QColor, QImage
-
-    tab = _tab()
-    image = QImage(40, 30, QImage.Format.Format_RGB32)
-    image.fill(QColor("blue"))
-    picture = QMimeData()
-    picture.setImageData(image)
-
-    assert tab.input.canInsertFromMimeData(picture)
-    tab.input.insertFromMimeData(picture)
-    tab.input.insertFromMimeData(picture)
-    words = QMimeData()
-    words.setText("pasted words")
-    tab.input.insertFromMimeData(words)
-
-    assert [item.name for item in tab._pending] == ["pasted-1.png", "pasted-2.png"]
-    assert tab._pending[0].data.startswith(b"\x89PNG")
-    assert tab.input.toPlainText() == "pasted words"
-
-    monkeypatch.setattr(assistant_tab.attachments, "MAX_IMAGE_BYTES", 10)
-    tab.attach_image(image)
-    assert "The picture is too large." in tab.status.text()
-    assert len(tab._pending) == 2
-
-
-def test_files_and_long_text_pasted_into_the_field_are_attached(
-    tmp_path, monkeypatch
-) -> None:
-    from PySide6.QtCore import QMimeData, QUrl
-
-    tab = _tab()
-    log = tmp_path / "app.log"
-    log.write_text("one\ntwo\n")
-    files = QMimeData()
-    files.setUrls([QUrl.fromLocalFile(str(log))])
-    assert tab.input.canInsertFromMimeData(files)
-    tab.input.insertFromMimeData(files)
-    long = QMimeData()
-    long.setText("x" * assistant_tab.LONG_PASTE)
-    tab.input.insertFromMimeData(long)
-
-    assert [item.name for item in tab._pending] == ["app.log", "pasted-1.txt"]
-    assert tab.input.toPlainText() == ""
-    assert tab.chips.count() >= 2  # a card for each, then the stretch
-    opened = []
-    monkeypatch.setattr(
-        assistant_tab.QDesktopServices, "openUrl", lambda url: opened.append(url)
-    )
-    tab._open_attachment(tab._pending[0])
-    assert opened[0].toLocalFile().endswith("app.log")
-    tab._pending.clear()
-    huge = "x" * (assistant_tab.attachments.MAX_TEXT_BYTES + 1)
-    tab.attach_text(huge)
-    assert "too large" in tab.status.text()
-
-
-def test_clicking_an_attachment_opens_it_and_a_failed_copy_is_told(
-    monkeypatch, tmp_path
-) -> None:
-    from PySide6.QtCore import QPoint, Qt
-    from PySide6.QtTest import QTest
-
-    tab = _tab()
-    opened = []
-    monkeypatch.setattr(
-        assistant_tab.QDesktopServices, "openUrl", lambda url: opened.append(url)
-    )
-    card = assistant_tab.ClickableFrame()
-    card.resize(40, 40)
-    clicked = []
-    card.clicked.connect(lambda: clicked.append(1))
-
-    QTest.mouseClick(card, Qt.MouseButton.LeftButton, pos=QPoint(5, 5))
-    QTest.mouseRelease(card, Qt.MouseButton.LeftButton, pos=QPoint(500, 500))
-    QTest.mouseClick(card, Qt.MouseButton.RightButton, pos=QPoint(5, 5))
-    assert clicked == [1]
-
-    item = assistant_tab.Attachment("a.log", "text", b"x")
-    tab._open_attachment(item)
-    assert opened[-1].toLocalFile().endswith("a.log")
-
-    def broken(_self, _data):
-        raise OSError(13, "Permission denied")
-
-    monkeypatch.setattr(assistant_tab.Path, "write_bytes", broken)
-    tab._open_attachment(item)
-    assert "Permission denied" in tab.status.text()
-    assert len(opened) == 1
-
-
-def _chip(tab: AssistantTab):
+def _chip(tab: _AssistantTab):
     item = tab.chips.itemAt(0)
     assert item is not None
     widget = item.widget()
@@ -682,7 +558,7 @@ def test_the_empty_chat_greets_with_the_name_and_the_company_and_gives_way(
     queue, _prompts = replies
     queue.append(["Hello"])
     tab = _tab()
-    tab.show()
+    tab.widget.show()
 
     assert tab.welcome.isVisible()
     assert "Hi, I'm Gabi, from DCO." in tab.welcome.text()
@@ -691,58 +567,29 @@ def test_the_empty_chat_greets_with_the_name_and_the_company_and_gives_way(
     _say(tab, "hi")
     assert not tab.welcome.isVisible()
     assert all("Hi, I'm Gabi" not in text for _role, text in tab.entries())
-    tab.close()
+    tab.widget.close()
 
 
 def test_the_greeting_is_back_when_a_question_is_taken_back(replies) -> None:
     queue, _prompts = replies
     queue.append(AssistantError("Not logged in"))
     tab = _tab()
-    tab.show()
+    tab.widget.show()
 
     _say(tab, "why?")
 
     assert tab.welcome.isVisible() and tab._bubbles == []
-    tab.close()
+    tab.widget.close()
 
 
 def test_a_conversation_that_comes_from_the_history_has_no_greeting() -> None:
     tab = AssistantTab(
         ChatSession(FAKE), "ctx", lambda: True, history=[("user", "before")]
     )
-    tab.show()
+    tab.widget.show()
 
     assert not tab.welcome.isVisible()
-    tab.close()
-
-
-def test_the_worker_of_an_answer_hands_over_each_piece_and_each_failure(
-    replies,
-) -> None:
-    queue, _prompts = replies
-    queue.append(["one ", "two"])
-    queue.append(AssistantError("Not logged in"))
-    pieces: list[str] = []
-    failures: list[str] = []
-
-    for _ in range(2):
-        worker = AnswerWorker(ChatSession(FAKE), "why?")
-        worker.piece.connect(pieces.append)
-        worker.failed.connect(failures.append)
-        worker.run()  # in this thread, which is the one that is measured
-
-    assert pieces == ["one ", "two"]
-    assert failures == ["Not logged in"]
-
-
-def test_the_worker_of_a_read_hands_over_what_was_read() -> None:
-    worker = ReadWorker(lambda: "the document")
-    done: list[str] = []
-    worker.done.connect(done.append)
-
-    worker.run()
-
-    assert done == ["the document"]
+    tab.widget.close()
 
 
 _LONG = (
@@ -758,7 +605,7 @@ _LONG = (
 )
 
 
-def _settle(tab: AssistantTab) -> None:
+def _settle(tab: _AssistantTab) -> None:
     for _ in range(12):
         application.processEvents()
         time.sleep(0.01)
@@ -766,25 +613,25 @@ def _settle(tab: AssistantTab) -> None:
 
 def test_a_message_is_as_high_as_its_text_at_any_width_of_the_panel() -> None:
     tab = _tab()
-    tab.resize(430, 560)
-    tab.show()
+    tab.widget.resize(430, 560)
+    tab.widget.show()
     tab._add_entry("assistant", _LONG)
     tab._add_entry("user", "Quanto está consumindo de cpu e memória, atualmente?")
 
     for width in (430, 330, 700, 360, 520):
-        tab.resize(width, 560)
+        tab.widget.resize(width, 560)
         _settle(tab)
         for label in tab._labels:
             needed = label.document().size().height()
             assert label.height() >= needed - 1, (width, label.text()[:20])
             assert label.height() <= needed + 2  # and no blank room under it
-    tab.close()
+    tab.widget.close()
 
 
 def test_a_short_message_is_as_wide_as_its_text_and_not_squeezed(replies) -> None:
     tab = _tab()
-    tab.resize(430, 560)
-    tab.show()
+    tab.widget.resize(430, 560)
+    tab.widget.show()
     question = "Quanto está consumindo de cpu e memória, atualmente?"
     tab._add_entry("user", question)
     tab._add_entry("user", "ok")
@@ -798,48 +645,7 @@ def test_a_short_message_is_as_wide_as_its_text_and_not_squeezed(replies) -> Non
     assert question_label.width() > 130  # not squeezed into a narrow column
     assert question_label.height() < short.height() * 4  # nor a tall thin bubble
     assert 0 < short.width() < 100  # a short answer has a small bubble
-    tab.close()
-
-
-def test_the_text_of_a_message_keeps_its_format_and_is_selectable() -> None:
-    from kubescope.gabi.tab import MessageText
-
-    markdown, plain = MessageText(markdown=True), MessageText(markdown=False)
-    markdown.setText("**bold** and `code`")
-    plain.setText("**not bold**")
-
-    assert markdown.textFormat() == assistant_tab.Qt.TextFormat.MarkdownText
-    assert plain.textFormat() == assistant_tab.Qt.TextFormat.PlainText
-    assert markdown.text() == "**bold** and `code`" and "**" not in (
-        markdown.toPlainText()
-    )
-    assert plain.toPlainText() == "**not bold**"
-    markdown.selectAll()
-    assert markdown.textCursor().selectedText() == "bold and code"
-    assert markdown.sizeHint().width() > 0 and markdown.sizeHint().height() > 0
-
-
-def test_the_wheel_over_a_message_scrolls_the_conversation_not_the_message() -> None:
-    from PySide6.QtCore import QPoint, QPointF
-    from PySide6.QtGui import QWheelEvent
-
-    from kubescope.gabi.tab import MessageText
-
-    text = MessageText(markdown=False)
-    event = QWheelEvent(
-        QPointF(5, 5),
-        QPointF(5, 5),
-        QPoint(0, 0),
-        QPoint(0, -120),
-        assistant_tab.Qt.MouseButton.NoButton,
-        assistant_tab.Qt.KeyboardModifier.ControlModifier,  # which would zoom it
-        assistant_tab.Qt.ScrollPhase.NoScrollPhase,
-        False,
-    )
-
-    text.wheelEvent(event)
-
-    assert not event.isAccepted()
+    tab.widget.close()
 
 
 def test_debug_is_answered_by_the_app_and_only_when_it_has_a_report(replies) -> None:
@@ -857,27 +663,6 @@ def test_debug_is_answered_by_the_app_and_only_when_it_has_a_report(replies) -> 
     _say(plain, "/debug")
     settle(plain)
     assert len(prompts) == 1
-
-
-def test_enter_sends_and_shift_enter_goes_to_the_next_line(replies) -> None:
-    from PySide6.QtCore import Qt
-    from PySide6.QtTest import QTest
-
-    queue, prompts = replies
-    queue.append(["ok"])
-    tab = _tab()
-
-    tab.input.setPlainText("first line")
-    tab.input.moveCursor(tab.input.textCursor().MoveOperation.End)
-    QTest.keyClick(tab.input, Qt.Key.Key_Return, Qt.KeyboardModifier.ShiftModifier)
-    QTest.keyClicks(tab.input, "second")
-    assert tab.input.toPlainText() == "first line\nsecond" and prompts == []
-
-    QTest.keyClick(tab.input, Qt.Key.Key_Enter)  # the one of the numeric pad too
-    settle(tab)
-
-    assert len(prompts) == 1 and "first line\nsecond" in prompts[0]
-    assert tab.input.toPlainText() == ""
 
 
 def test_compact_summarizes_the_conversation_and_says_how_much_shorter(
@@ -941,31 +726,18 @@ def test_the_context_ring_and_cache_indicator(replies, monkeypatch) -> None:
     ring = tab.ring
     ring.show()
 
-    for fraction in (0, 0.5, 0.75, 1, 2, -1):
-        ring.set_fraction(fraction)
-        ring.render(QPixmap(ring.size()))
-    assert ring.fraction == 0
-
-    clicked: list[bool] = []
-    ring.clicked.connect(lambda: clicked.append(True))
-    QTest.mouseClick(ring, Qt.MouseButton.LeftButton)
-    assert clicked == [True]
-    popup = QApplication.activePopupWidget()
-    if popup is not None:
-        popup.close()
-
     monkeypatch.setattr(chat, "clock", lambda: 20)
     tab.session.cache_ttl = 90
     tab.session.answered_at = 0
     tab.set_usage("", "tip")
     assert tab.usage_label.isHidden() and ring.isHidden()
-    assert tab._cache_timer.isActive()
+    assert tab.view._cache_timer.isActive()
     assert "Cache: it expires in 1 min" in ring.toolTip()
 
     monkeypatch.setattr(chat, "clock", lambda: 110)
     tab.set_usage("tokens", "tip")
     assert not tab.usage_label.isHidden() and not ring.isHidden()
-    assert not tab._cache_timer.isActive()
+    assert not tab.view._cache_timer.isActive()
     assert "Cache expired: the next question writes it again" in ring.toolTip()
 
 
@@ -1043,3 +815,63 @@ def test_a_stopped_activity_and_an_empty_answer_tell_nothing(replies) -> None:
 
     assert told == []
     assert assistant_tab.summary_of("") == ""
+
+
+def test_a_picture_pasted_is_attached_by_its_bytes_and_a_big_one_is_refused(
+    monkeypatch,
+) -> None:
+    tab = _tab()
+    png = testing.png_bytes(10, 10)
+
+    tab.attach_image(png)
+    tab.attach_image(png)
+    tab.attach_text("pasted words")
+
+    assert [item.name for item in tab._pending] == [
+        "pasted-1.png",
+        "pasted-2.png",
+        "pasted-3.txt",
+    ]
+    assert tab._pending[0].data.startswith(b"\x89PNG")
+
+    monkeypatch.setattr(assistant_tab.attachments, "MAX_IMAGE_BYTES", 10)
+    tab.attach_image(png)
+    assert "The picture is too large." in tab.status.text()
+    assert len(tab._pending) == 3
+    tab._pending.clear()
+    huge = "x" * (assistant_tab.attachments.MAX_TEXT_BYTES + 1)
+    tab.attach_text(huge)
+    assert "too large" in tab.status.text()
+
+
+def test_files_pasted_are_attached_and_an_attachment_that_cannot_open_says_why(
+    tmp_path, monkeypatch
+) -> None:
+    tab = _tab()
+    log = tmp_path / "app.log"
+    log.write_text("one\ntwo\n")
+
+    tab.attach_all([log])
+
+    assert [item.name for item in tab._pending] == ["app.log"]
+    assert tab.chips.count() >= 2  # a card for each, then the stretch
+    monkeypatch.setattr(tab.view, "open_attachment", lambda item: "Permission denied")
+    tab._open_attachment(tab._pending[0])
+    assert "Permission denied" in tab.status.text()
+    monkeypatch.setattr(tab.view, "open_attachment", lambda item: "")
+    tab._show_status("")
+    tab._open_attachment(tab._pending[0])
+    assert tab.status.isHidden()
+
+
+def test_the_enter_of_the_field_sends_the_question(replies) -> None:
+    queue, prompts = replies
+    queue.append(["ok"])
+    tab = _tab()
+    tab.input.setPlainText("first line\nsecond")
+
+    tab.view.submitted.emit()  # what Enter says
+    settle(tab)
+
+    assert len(prompts) == 1 and "first line\nsecond" in prompts[0]
+    assert tab.input.toPlainText() == ""

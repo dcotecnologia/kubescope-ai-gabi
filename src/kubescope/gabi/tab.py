@@ -1,64 +1,28 @@
-import tempfile
-from collections.abc import Callable, Sequence
-from math import ceil
-from pathlib import Path
+"""A conversation with the assistant of the system: what it is told, what it
+answers, what it asks of the window.
 
+The chat itself (the bubbles, the field, the attachments) is drawn by
+the app (`ctx.ui.components.chat_view`); this is what the conversation
+does.
+"""
+
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+from kubescope.sdk import translate
 from kubescope.sdk.timezone import zone_now
-from PySide6.QtCore import (
-    QBuffer,
-    QByteArray,
-    QIODevice,
-    QMimeData,
-    QPointF,
-    QRectF,
-    QSize,
-    Qt,
-    QThread,
-    QTimer,
-    QUrl,
-    Signal,
-)
-from PySide6.QtGui import (
-    QColor,
-    QDesktopServices,
-    QImage,
-    QImageWriter,
-    QKeyEvent,
-    QMouseEvent,
-    QPainter,
-    QPainterPath,
-    QPen,
-    QPixmap,
-    QResizeEvent,
-    QWheelEvent,
-)
-from PySide6.QtWidgets import (
-    QFileDialog,
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QMenu,
-    QPlainTextEdit,
-    QPushButton,
-    QScrollArea,
-    QSizePolicy,
-    QTextBrowser,
-    QVBoxLayout,
-    QWidget,
-)
 
 from kubescope.gabi import actions, attachments, executor
 from kubescope.gabi.actions import Invalid, Request
 from kubescope.gabi.attachments import Attachment, AttachmentError
 from kubescope.gabi.history import Entry
-from kubescope.gabi.icons import attach_icon, send_icon, stop_icon
 from kubescope.gabi.runner import (
     COMPANY,
     NAME,
     Assistant,
-    AssistantError,
 )
-from kubescope.gabi.services import themed
 from kubescope.gabi.session import ChatSession, Message
 from kubescope.gabi.usage import compact
 
@@ -67,219 +31,54 @@ COMPACT_COMMAND = "/compact"  # summarizes the conversation, to make it short
 DEBUG_COMMAND = "/debug"  # tells what answers, from the settings
 KUBE_COMMANDS = ("/kube", "/kubectl")  # tell what the computer has for kubectl
 MAX_FOLLOW_UPS = 5  # reads the assistant may ask for after one question
-BUBBLE_WIDTH = 0.82  # of the width of the conversation
-DOODLE = 56  # the size of a tile of the pattern behind the messages
-
-
-class ChatBackground(QWidget):
-    """The wall behind the messages: a plain color with a faint pattern, like a
-    chat of a phone."""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.color = QColor(themed("#f7f7fa"))
-        self.ink = QColor(themed("#6b7380"))
-
-    def paintEvent(self, event) -> None:
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.fillRect(self.rect(), self.color)
-        faint = QColor(self.ink)
-        faint.setAlpha(26)
-        painter.setPen(QPen(faint, 1.4))
-        for row in range(0, self.height() // DOODLE + 1):
-            for column in range(0, self.width() // DOODLE + 1):
-                x = column * DOODLE + (DOODLE // 2 if row % 2 else 0)
-                y = row * DOODLE
-                shape = (row + column) % 3
-                if shape == 0:
-                    painter.drawEllipse(QPointF(x + 14, y + 14), 5, 5)
-                elif shape == 1:
-                    painter.drawLine(QPointF(x + 8, y + 14), QPointF(x + 20, y + 14))
-                    painter.drawLine(QPointF(x + 14, y + 8), QPointF(x + 14, y + 20))
-                else:
-                    painter.drawRect(int(x + 9), int(y + 9), 10, 10)
-
-
-CARD = 88  # the side of the card of an attachment, above the message field
-PILL_THUMB = 18  # the side of the small picture in the pill of a sent message
 LONG_PASTE = 2000  # a pasted text this long is attached as a file, not typed
-FILE_FILTER = "Images and text files ({patterns});;All files (*)"
 
 
-class MessageText(QTextBrowser):
-    """The text of a message, as high as the text is and as wide as the text
-    needs up to the room it has.
-
-    A label that wraps its text guesses how wide to be and can draw the
-    text in a size other than the one it measured; this one measures and
-    draws the same document, and the person can select what is in it.
-    """
-
-    def __init__(self, markdown: bool) -> None:
-        super().__init__()
-        self._markdown = markdown
-        self._text = ""
-        self.setFrameShape(QFrame.Shape.NoFrame)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setOpenExternalLinks(True)
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        self.setMinimumWidth(24)
-        self.document().setDocumentMargin(0)
-        self.setStyleSheet("QTextBrowser { background: transparent; border: 0; }")
-
-    def text(self) -> str:
-        return self._text
-
-    def textFormat(self) -> Qt.TextFormat:
-        return Qt.TextFormat.MarkdownText if self._markdown else Qt.TextFormat.PlainText
-
-    def setText(self, text: str) -> None:
-        self._text = text
-        if self._markdown:
-            self.setMarkdown(text)
-        else:
-            self.setPlainText(text)
-        self._fit()
-        self.updateGeometry()
-
-    def _fit(self) -> None:
-        """Make it as high as its text is at the width it has."""
-        width = self.viewport().width()
-        document = self.document()
-        document.setTextWidth(width if width > 0 else -1)
-        self.setFixedHeight(max(ceil(document.size().height()), 1))
-
-    def sizeHint(self) -> QSize:
-        """As wide as the text is when it is not wrapped, and as high as it is
-        then."""
-        document = self.document()
-        document.setTextWidth(-1)
-        width = ceil(document.idealWidth()) + 1
-        height = ceil(document.size().height())
-        self._fit()  # back to the width it has
-        return QSize(width, height)
-
-    def resizeEvent(self, event: QResizeEvent) -> None:
-        super().resizeEvent(event)
-        self._fit()
-
-    def wheelEvent(self, event: QWheelEvent) -> None:
-        event.ignore()  # the conversation is the one that scrolls
+def tab_texts() -> dict[str, str]:
+    """The words of the chat in the language of the app, by their English
+    text."""
+    return {
+        "welcome": translate(
+            "AssistantTab",
+            "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope "
+            "well. Ask me about what you see on the screen, ask me to look into "
+            "a problem, or ask me to take you somewhere in the app.",
+        ).format(name=NAME, company=COMPANY),
+        "placeholder": translate(
+            "AssistantTab", "Ask Gabi about the cluster or ask for an action..."
+        ),
+        "Send": translate("AssistantTab", "Send"),
+        "Stop": translate("AssistantTab", "Stop"),
+        "Attach": translate("AssistantTab", "Attach"),
+        "Open {name}": translate("AssistantTab", "Open {name}"),
+        "{count} lines": translate("AssistantTab", "{count} lines"),
+        "Images and text files ({patterns});;All files (*)": translate(
+            "AssistantTab", "Images and text files ({patterns});;All files (*)"
+        ),
+    }
 
 
-class ClickableFrame(QFrame):
-    """A frame that can be clicked, like an attachment."""
-
-    clicked = Signal()
+class Event:
+    """What an owner of the tab listens to: `connect` a function, and `emit`
+    calls it with the arguments."""
 
     def __init__(self) -> None:
-        super().__init__()
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._handlers: list[Callable[..., None]] = []
 
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(
-            event.position().toPoint()
-        ):
-            self.clicked.emit()
-        super().mouseReleaseEvent(event)
+    def connect(self, handler: Callable[..., None]) -> None:
+        self._handlers.append(handler)
 
-
-class ChatInput(QPlainTextEdit):
-    """The message field: a picture pasted into it is attached, not typed, and
-    Enter sends the message, while Shift+Enter goes to the next line."""
-
-    image_pasted = Signal(QImage)
-    files_pasted = Signal(object)  # the paths of files pasted from a file manager
-    text_pasted = Signal(str)  # a long text, to attach instead of typing
-    submitted = Signal()
-
-    def keyPressEvent(self, event: QKeyEvent) -> None:
-        enter = event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)
-        if enter and not event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
-            self.submitted.emit()
-            return
-        super().keyPressEvent(event)
-
-    def canInsertFromMimeData(self, source: QMimeData) -> bool:
-        return (
-            source.hasImage()
-            or source.hasUrls()
-            or super().canInsertFromMimeData(source)
-        )
-
-    def insertFromMimeData(self, source: QMimeData) -> None:
-        image = source.imageData() if source.hasImage() else None
-        paths = [Path(url.toLocalFile()) for url in source.urls() if url.isLocalFile()]
-        if isinstance(image, QImage) and not image.isNull():
-            self.image_pasted.emit(image)
-        elif paths:
-            self.files_pasted.emit(paths)
-        elif source.hasText() and len(source.text()) >= LONG_PASTE:
-            self.text_pasted.emit(source.text())
-        else:
-            super().insertFromMimeData(source)
+    def emit(self, *arguments: Any) -> None:
+        for handler in list(self._handlers):
+            handler(*arguments)
 
 
-class ContextRing(QWidget):
-    """A small ring that fills as the conversation grows toward the point where
-    it is compacted; a click asks for its menu."""
+@dataclass
+class Compacted:
+    """A long conversation was compacted before the question went."""
 
-    clicked = Signal()
-    SIZE = 18
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.fraction = 0.0
-        self.setFixedSize(self.SIZE, self.SIZE)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-
-    def set_fraction(self, fraction: float) -> None:
-        self.fraction = min(max(fraction, 0.0), 1.0)
-        self.update()
-
-    def paintEvent(self, event) -> None:
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        area = QRectF(3, 3, self.SIZE - 6, self.SIZE - 6)
-        track = QColor(themed("#6b7380", text=True))
-        track.setAlpha(80)
-        painter.setPen(QPen(track, 2.0))
-        painter.drawEllipse(area)
-        if self.fraction <= 0:
-            return
-        if self.fraction >= 1.0:
-            color = themed("#a33d45", text=True)  # about to be compacted
-        elif self.fraction >= 0.75:
-            color = themed("#985415", text=True)
-        else:
-            color = themed("#6c5fc4")
-        pen = QPen(QColor(color), 2.0)
-        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        painter.setPen(pen)
-        painter.drawArc(area, 90 * 16, -round(360 * 16 * self.fraction))
-
-    def mouseReleaseEvent(self, event) -> None:
-        self.clicked.emit()
-
-
-class CompactWorker(QThread):
-    """Compact the conversation: the assistant summarizes it."""
-
-    done = Signal(int, int)  # the characters it was and the characters it is
-    failed = Signal(str)
-
-    def __init__(self, session: ChatSession) -> None:
-        super().__init__()
-        self.session = session
-        self.stopped = False  # asked to stop: the summary is made all the same
-
-    def run(self) -> None:
-        try:
-            self.done.emit(*self.session.compact())
-        except AssistantError as error:
-            self.failed.emit(str(error))
+    before: int
+    after: int
 
 
 SUMMARY = 140  # characters of an answer that a notice carries
@@ -292,62 +91,7 @@ def summary_of(answer: str) -> str:
     return first if len(first) <= SUMMARY else first[: SUMMARY - 1].rstrip() + "…"
 
 
-class AnswerWorker(QThread):
-    """Ask the assistant and hand over the answer as it comes."""
-
-    piece = Signal(str)
-    failed = Signal(str)
-    compacted = Signal(int, int)  # a long conversation was compacted first
-
-    def __init__(
-        self,
-        session: ChatSession,
-        text: str,
-        screen: str = "",
-        files: tuple[Attachment, ...] = (),
-        compact: bool = False,
-    ) -> None:
-        super().__init__()
-        self.session = session
-        self.text = text
-        self.screen = screen
-        self.files = files
-        self.compact = compact
-        self.stopped = False
-
-    def run(self) -> None:
-        if self.compact:
-            try:
-                self.compacted.emit(*self.session.compact())
-            except AssistantError as error:
-                self.failed.emit(str(error))
-                return
-        stream = self.session.send(self.text, self.screen, self.files)
-        try:
-            for piece in stream:
-                if self.stopped:
-                    break
-                self.piece.emit(piece)
-        except AssistantError as error:
-            self.failed.emit(str(error))
-        finally:
-            stream.close()  # stops the program when the answer was cut short
-
-
-class ReadWorker(QThread):
-    """Read the cluster for the assistant."""
-
-    done = Signal(str)
-
-    def __init__(self, read: Callable[[], str]) -> None:
-        super().__init__()
-        self.read = read
-
-    def run(self) -> None:
-        self.done.emit(self.read())
-
-
-class AssistantTab(QWidget):
+class AssistantTab:
     """A conversation with the assistant of the system, laid out as a chat:
     what the person writes on the right, what comes back on the left.
 
@@ -356,162 +100,146 @@ class AssistantTab(QWidget):
     run it.
     """
 
-    navigate = Signal(object)  # a Request of the app, to show
-    write = Signal(object)  # a Request the person confirmed
-    kube_requested = Signal()  # the person typed /kube: the window reads it
-    auto_compact_changed = Signal(bool)  # the person turned it on or off
-    changed = Signal()  # the conversation has a new entry to keep
-    usage_changed = Signal()  # an answer came: the tokens of the session grew
-    # the assistant is done with what was asked (the answer, or why there is none)
-    # and the success of it, for a notice when the person is not looking
-    activity_done = Signal(str, bool)
-
     def __init__(
         self,
         session: ChatSession,
         context: str,
         write_mode: Callable[[], bool],
+        components: Any,
         fetch: Callable[[Request, str], str] = executor.fetch,
         screen: Callable[[], str] = lambda: "",
         history: Sequence[Entry] = (),
         takes_images: bool = True,
     ) -> None:
-        super().__init__()
         self.session = session
         self.context = context
         self.save_name = "assistant.txt"
         self.closed = False
+        self.navigate = Event()  # a Request of the app, to show
+        self.write = Event()  # a Request the person confirmed
+        self.kube_requested = Event()  # the person typed /kube: the window reads it
+        self.auto_compact_changed = Event()  # the person turned it on or off
+        self.changed = Event()  # the conversation has a new entry to keep
+        self.usage_changed = Event()  # an answer came: the tokens of the session grew
+        # the assistant is done with what was asked (the answer, or why there is
+        # none) and the success of it, for a notice when the person is not looking
+        self.activity_done = Event()
+        self._components = components
         self._write_mode = write_mode
         self._fetch = fetch
         self._screen = screen
         self._takes_images = takes_images
         self.debug_report: Callable[[], str] | None = None  # what /debug says
         self._pending: list[Attachment] = []  # attached, not sent yet
-        self._opened: tempfile.TemporaryDirectory[str] | None = None
         self._entries: list[Entry] = []  # (role, text) of what is shown
-        self._bubbles: list[QFrame] = []
-        self._labels: list[MessageText] = []
-        self._bubble_info: list[tuple[str, QLabel | None, str]] = []
-        self._stream: MessageText | None = None  # the bubble of the answer coming in
+        self._stream: Any = None  # the bubble of the answer coming in
         self._answer = ""
         self._follow_ups = 0
         self._failed = False
-        self._at_end = True  # the view follows the newest message
-        self._worker: AnswerWorker | CompactWorker | None = None
-        self._reader: ReadWorker | None = None
-
-        self.thread_scroll = QScrollArea()
-        self.thread_scroll.setWidgetResizable(True)
-        self.thread_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.thread_view = ChatBackground()
-        self.thread_layout = QVBoxLayout(self.thread_view)
-        self.thread_layout.addStretch(1)
-        self.welcome = QLabel(
-            self.tr(
-                "Hi, I'm {name}, from {company}. I know Kubernetes and KubeScope "
-                "well. Ask me about what you see on the screen, ask me to look into "
-                "a problem, or ask me to take you somewhere in the app."
-            ).format(name=NAME, company=COMPANY)
-        )
-        self.welcome.setWordWrap(True)
-        self.welcome.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.thread_layout.insertWidget(0, self.welcome)  # until the first message
-        self.thread_scroll.setWidget(self.thread_view)
-        bar = self.thread_scroll.verticalScrollBar()
-        bar.rangeChanged.connect(self._follow_the_end)
-        bar.valueChanged.connect(self._scrolled)
-        self.cards = QVBoxLayout()
-        self.input = ChatInput()
-        self.input.setObjectName("assistantInput")
-        self.input.setMaximumHeight(72)
-        self.input.setMinimumHeight(40)
-        self.input.setPlaceholderText(
-            self.tr("Ask Gabi about the cluster or ask for an action...")
-        )
-        self.send_button = self._round_button(self.tr("Send"))
-        self.stop_button = self._round_button(self.tr("Stop"))
-        self.stop_button.setEnabled(False)
-        self.stop_button.hide()
-        self.attach_button = self._round_button(self.tr("Attach"))
-        self.attach_button.clicked.connect(self._choose_files)
-        self.input.image_pasted.connect(self.attach_image)
-        self.input.files_pasted.connect(self.attach_all)
-        self.input.text_pasted.connect(self.attach_text)
-        self.input.submitted.connect(self.submit)
-        self.chips = QHBoxLayout()
-        self.chips.setSpacing(6)
-        self.chip_bar = QWidget()
-        self.chip_bar.setLayout(self.chips)
-        self.chip_bar.hide()
-        self.status = QLabel("")
-        self.status.hide()
-        self.usage_label = QLabel("")  # the tokens, under the box of the question
-        self.usage_label.setObjectName("assistantUsage")
-        self.usage_label.setAlignment(Qt.AlignmentFlag.AlignRight)
-        # the color of the placeholder of the box above it
-        self.usage_label.setStyleSheet("QLabel { color: palette(placeholder-text); }")
-        self.usage_label.hide()
-        self.ring = ContextRing()
-        self.ring.hide()
-        self.ring.clicked.connect(self._show_context_menu)
+        self._worker: Any = None
+        self._reader: Any = None
         self.auto_compact = True  # a long conversation is compacted by itself
-        self._cache_timer = QTimer(self)  # tells when the cache of the prompt expires
-        self._cache_timer.setSingleShot(True)
-        self._cache_timer.timeout.connect(self.usage_changed)
-        self.send_button.clicked.connect(self.submit)
-        self.stop_button.clicked.connect(self.stop)
 
-        composer = QFrame()
-        composer.setObjectName("assistantComposer")
-        bar = QVBoxLayout(composer)
-        bar.setContentsMargins(8, 6, 8, 8)
-        bar.setSpacing(6)
-        row = QHBoxLayout()
-        row.setSpacing(6)
-        row.addWidget(self.attach_button, 0, Qt.AlignmentFlag.AlignBottom)
-        row.addWidget(self.input, 1)
-        row.addWidget(self.send_button, 0, Qt.AlignmentFlag.AlignBottom)
-        row.addWidget(self.stop_button, 0, Qt.AlignmentFlag.AlignBottom)
-        self.status.setWordWrap(True)
-        self.cards.setSpacing(6)
-        bar.addLayout(self.cards)
-        bar.addWidget(self.chip_bar)
-        bar.addWidget(self.status)
-        bar.addLayout(row)
-        usage_row = QHBoxLayout()
-        usage_row.setSpacing(6)
-        usage_row.addStretch(1)
-        usage_row.addWidget(self.usage_label)
-        usage_row.addWidget(self.ring)
-        bar.addLayout(usage_row)
-        self.composer = composer
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        layout.addWidget(self.thread_scroll, 1)
-        layout.addWidget(composer)
-        self._restyle_thread()
-        self._style_buttons()
+        view = self.view = components.chat_view(tab_texts())
+        self.widget = view
+        view.submitted.connect(self.submit)
+        view.stop_requested.connect(self.stop)
+        view.attach_requested.connect(self._choose_files)
+        view.image_pasted.connect(self.attach_image)
+        view.files_pasted.connect(self.attach_all)
+        view.text_pasted.connect(self.attach_text)
+        view.ring_clicked.connect(self._show_context_menu)
+        view.usage_expired.connect(lambda: self.usage_changed.emit())
         for role, text in history:
             self._entries.append((role, text))
             self._add_bubble(role, text)
             if role in ("user", "assistant"):
                 self.session.messages.append(Message(role, text))  # type: ignore[arg-type]
 
+    # the parts of the chat the owner and the tests reach
+    @property
+    def input(self) -> Any:
+        return self.view.input
+
+    @property
+    def send_button(self) -> Any:
+        return self.view.send_button
+
+    @property
+    def stop_button(self) -> Any:
+        return self.view.stop_button
+
+    @property
+    def attach_button(self) -> Any:
+        return self.view.attach_button
+
+    @property
+    def status(self) -> Any:
+        return self.view.status
+
+    @property
+    def usage_label(self) -> Any:
+        return self.view.usage_label
+
+    @property
+    def ring(self) -> Any:
+        return self.view.ring
+
+    @property
+    def cards(self) -> Any:
+        return self.view.cards
+
+    @property
+    def chips(self) -> Any:
+        return self.view.chips
+
+    @property
+    def chip_bar(self) -> Any:
+        return self.view.chip_bar
+
+    @property
+    def thread_view(self) -> Any:
+        return self.view.thread_view
+
+    @property
+    def thread_scroll(self) -> Any:
+        return self.view.thread_scroll
+
+    @property
+    def welcome(self) -> Any:
+        return self.view.welcome
+
+    @property
+    def composer(self) -> Any:
+        return self.view.composer
+
+    @property
+    def _bubbles(self) -> list[Any]:
+        return self.view._bubbles
+
+    @property
+    def _labels(self) -> list[Any]:
+        return self.view._labels
+
+    def retranslate(self) -> None:
+        """The language changed."""
+        self.view.set_texts(tab_texts())
+
+    def restyle(self) -> None:
+        """Take the colors of the theme in use, for what is already shown."""
+        self.view.restyle()
+
     def set_usage(self, text: str, tip: str) -> None:
         """Say what the session used in tokens, under the box of the
         question."""
-        self.usage_label.setText(text)
-        self.usage_label.setToolTip(tip)
-        self.usage_label.setVisible(bool(text))
-        self.ring.setVisible(bool(text))
-        self.ring.set_fraction(self.session.context_fraction())
-        self.ring.setToolTip("\n".join(line for line in self._context_lines() if line))
         left = self.session.cache_left()
-        if left:  # the line is made again when the cache expires
-            self._cache_timer.start(int(left * 1000) + 500)
-        else:
-            self._cache_timer.stop()
+        self.view.set_usage(
+            text,
+            tip,
+            self.session.context_fraction(),
+            "\n".join(line for line in self._context_lines() if line),
+            int(left * 1000) + 500 if left else 0,  # made again when it expires
+        )
 
     def _context_lines(self) -> list[str]:
         """What the ring tells: how full the conversation is and what is left
@@ -521,31 +249,36 @@ class AssistantTab(QWidget):
         if left is None:
             cache = ""
         elif left <= 0:
-            cache = self.tr("Cache expired: the next question writes it again")
-        else:
-            cache = self.tr("Cache: it expires in {time}").format(
-                time=self.tr("{n} min").format(n=max(round(left / 60), 1))
+            cache = translate(
+                "AssistantTab", "Cache expired: the next question writes it again"
             )
-        return [self.tr("Context: {percent}% full").format(percent=percent), cache]
+        else:
+            cache = translate("AssistantTab", "Cache: it expires in {time}").format(
+                time=translate("AssistantTab", "{n} min").format(
+                    n=max(round(left / 60), 1)
+                )
+            )
+        return [
+            translate("AssistantTab", "Context: {percent}% full").format(
+                percent=percent
+            ),
+            cache,
+        ]
 
     def _show_context_menu(self) -> None:
         """The menu of the ring."""
-        self._context_menu().popup(self.ring.mapToGlobal(self.ring.rect().bottomLeft()))
+        self._menu = self._context_menu()
 
-    def _context_menu(self) -> QMenu:
-        menu = QMenu(self)
-        for line in self._context_lines():
-            if line:
-                menu.addAction(line).setEnabled(False)
-        menu.addSeparator()
-        now = menu.addAction(self.tr("Compact now"))
-        now.setEnabled(len(self.session.messages) >= 2 and not self.busy)
-        now.triggered.connect(self._compact)
-        auto = menu.addAction(self.tr("Compact automatically"))
-        auto.setCheckable(True)
-        auto.setChecked(self.auto_compact)
-        auto.toggled.connect(self._set_auto_compact)
-        return menu
+    def _context_menu(self) -> Any:
+        return self.view.show_ring_menu(
+            self._context_lines(),
+            translate("AssistantTab", "Compact now"),
+            len(self.session.messages) >= 2 and not self.busy,
+            self._compact,
+            translate("AssistantTab", "Compact automatically"),
+            self.auto_compact,
+            self._set_auto_compact,
+        )
 
     def _set_auto_compact(self, on: bool) -> None:
         self.auto_compact = on
@@ -555,35 +288,6 @@ class AssistantTab(QWidget):
         """Go on with the conversation on another assistant."""
         self.session.assistant = assistant
         self._takes_images = assistant.takes_images
-
-    @staticmethod
-    def _round_button(tip: str) -> QPushButton:
-        button = QPushButton()
-        button.setToolTip(tip)
-        button.setFixedSize(40, 40)
-        return button
-
-    def _style_buttons(self) -> None:
-        """Color the round buttons from the theme in use."""
-        on_accent = themed("#ffffff", text=True)
-        quiet = self._palette()[4]
-        solid = (
-            (self.send_button, send_icon(on_accent), themed("#3020a5")),
-            (self.stop_button, stop_icon(on_accent), themed("#a33d45")),
-        )
-        for button, icon, color in solid:
-            button.setIcon(icon)
-            button.setStyleSheet(
-                f"QPushButton {{ background: {color}; border: 0;"
-                " border-radius: 20px; }"
-                f"QPushButton:disabled {{ background: {themed('#6c5fc4')}; }}"
-            )
-        self.attach_button.setIcon(attach_icon(quiet))
-        self.attach_button.setStyleSheet(
-            "QPushButton { background: transparent; border: 0;"
-            " border-radius: 20px; }"
-            f"QPushButton:hover {{ background: {themed('#eceef3')}; }}"
-        )
 
     @property
     def busy(self) -> bool:
@@ -614,40 +318,47 @@ class AssistantTab(QWidget):
         self._refresh_chips()
         self.input.clear()
         self._follow_ups = 0
-        self._ask(text or self.tr("See what is attached."), "user", text, files)
+        self._ask(
+            text or translate("AssistantTab", "See what is attached."),
+            "user",
+            text,
+            files,
+        )
 
     def _compact(self) -> None:
         """Compact the conversation, which the assistant summarizes."""
         if len(self.session.messages) < 2:
-            self.note(self.tr("There is nothing to compact yet."))
+            self.note(translate("AssistantTab", "There is nothing to compact yet."))
             return
         self._failed = False
         self._set_busy(True)
-        self._show_status(self.tr("Compacting the conversation..."))
-        self._worker = worker = CompactWorker(self.session)
-        worker.done.connect(self._compacted)
-        worker.failed.connect(self._compact_failed)
-        worker.finished.connect(lambda: self._compact_finished(worker))
-        worker.start()
+        self._show_status(translate("AssistantTab", "Compacting the conversation..."))
+        self._worker = self._components.background(
+            self.session.compact,
+            on_done=lambda result: self._compacted(*result),
+            on_error=self._compact_failed,
+            on_finished=self._compact_finished,
+        )
 
     def _compacted(self, before: int, after: int) -> None:
         """Tell that the conversation got shorter, in tokens, near enough."""
         self.note(
-            self.tr(
+            translate(
+                "AssistantTab",
                 "The conversation was compacted: about {before} tokens became "
-                "about {after}."
+                "about {after}.",
             ).format(before=compact(before // 4), after=compact(after // 4))
         )
 
     def _compact_failed(self, message: str) -> None:
         self._failed = True
         self.status.setText(
-            self.tr("The conversation could not be compacted: {message}").format(
-                message=message
-            )
+            translate(
+                "AssistantTab", "The conversation could not be compacted: {message}"
+            ).format(message=message)
         )
 
-    def _compact_finished(self, worker: CompactWorker) -> None:
+    def _compact_finished(self) -> None:
         self._worker = None
         self._set_busy(False)
 
@@ -657,14 +368,10 @@ class AssistantTab(QWidget):
             f"*{suffix}"
             for suffix in (*attachments.IMAGE_TYPES, *attachments.TEXT_TYPES)
         )
-        paths, _filter = QFileDialog.getOpenFileNames(
-            self,
-            self.tr("Attach"),
-            str(Path.home()),
-            self.tr(FILE_FILTER).format(patterns=patterns),
-        )
-        for path in paths:
-            self.attach(Path(path))
+        for path in self.view.choose_files(
+            translate("AssistantTab", "Attach"), patterns
+        ):
+            self.attach(path)
 
     def attach_all(self, paths: list[Path]) -> None:
         """Attach every file pasted, each saying why when it cannot be."""
@@ -678,21 +385,16 @@ class AssistantTab(QWidget):
         except AttachmentError as error:
             self._show_status(str(error))
 
-    def attach_image(self, image: QImage) -> None:
-        """Attach a picture, such as one pasted from the clipboard."""
-        data = QByteArray()
-        buffer = QBuffer(data)
-        buffer.open(QIODevice.OpenModeFlag.WriteOnly)
-        QImageWriter(buffer, QByteArray(b"PNG")).write(image)
+    def attach_image(self, png: bytes) -> None:
+        """Attach a picture, such as one pasted from the clipboard, as the
+        bytes of its PNG."""
         number = 1 + sum(item.name.startswith("pasted-") for item in self._pending)
         try:
-            if data.size() > attachments.MAX_IMAGE_BYTES:
-                raise AttachmentError(self.tr("The picture is too large."))
-            self._keep(
-                Attachment(
-                    f"pasted-{number}.png", "image", bytes(data.data()), "image/png"
+            if len(png) > attachments.MAX_IMAGE_BYTES:
+                raise AttachmentError(
+                    translate("AssistantTab", "The picture is too large.")
                 )
-            )
+            self._keep(Attachment(f"pasted-{number}.png", "image", png, "image/png"))
         except AttachmentError as error:
             self._show_status(str(error))
 
@@ -703,7 +405,9 @@ class AssistantTab(QWidget):
         data = text.encode("utf-8")
         try:
             if len(data) > attachments.MAX_TEXT_BYTES:
-                raise AttachmentError(self.tr("The pasted text is too large."))
+                raise AttachmentError(
+                    translate("AssistantTab", "The pasted text is too large.")
+                )
             self._keep(Attachment(f"pasted-{number}.txt", "text", data))
         except AttachmentError as error:
             self._show_status(str(error))
@@ -711,15 +415,15 @@ class AssistantTab(QWidget):
     def _keep(self, item: Attachment) -> None:
         if len(self._pending) >= attachments.MAX_ATTACHMENTS:
             raise AttachmentError(
-                self.tr("At most {count} files go with a question.").format(
-                    count=attachments.MAX_ATTACHMENTS
-                )
+                translate(
+                    "AssistantTab", "At most {count} files go with a question."
+                ).format(count=attachments.MAX_ATTACHMENTS)
             )
         if item.kind == "image" and not self._takes_images:
             raise AttachmentError(
-                self.tr("This assistant takes text files only, not {name}.").format(
-                    name=item.name
-                )
+                translate(
+                    "AssistantTab", "This assistant takes text files only, not {name}."
+                ).format(name=item.name)
             )
         self._pending.append(item)
         self._refresh_chips()
@@ -727,95 +431,13 @@ class AssistantTab(QWidget):
 
     def _refresh_chips(self) -> None:
         """Show what is attached, each with a × to take it off."""
-        while (entry := self.chips.takeAt(0)) is not None:
-            if (widget := entry.widget()) is not None:
-                widget.deleteLater()
-        _wall, own, other, ink, quiet, _tick = self._palette()
-        for item in self._pending:
-            self.chips.addWidget(self._card(item))
-        self.chips.addStretch(1)
-        self.chip_bar.setVisible(bool(self._pending))
+        self.view.show_chips(self._pending, self._open_attachment, self._detach)
 
     def _open_attachment(self, item: Attachment) -> None:
-        """Open an attachment with the program the system uses for its kind.
-
-        Attachments are not kept, so a copy goes to a folder that lives
-        as long as this chat.
-        """
-        if self._opened is None:
-            self._opened = tempfile.TemporaryDirectory(prefix="kubescope-")
-        path = Path(self._opened.name) / Path(item.name).name
-        try:
-            path.write_bytes(item.data)
-            path.chmod(0o600)
-        except OSError as error:
-            self._show_status(str(error.strerror or error))
-            return
-        QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
-
-    @staticmethod
-    def _rounded(pixmap: QPixmap, side: int, radius: int) -> QPixmap:
-        """The picture cropped to a square with rounded corners."""
-        scaled = pixmap.scaled(
-            side,
-            side,
-            Qt.AspectRatioMode.KeepAspectRatioByExpanding,
-            Qt.TransformationMode.SmoothTransformation,
-        )
-        result = QPixmap(side, side)
-        result.fill(Qt.GlobalColor.transparent)
-        painter = QPainter(result)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        clip = QPainterPath()
-        clip.addRoundedRect(0, 0, side, side, radius, radius)
-        painter.setClipPath(clip)
-        painter.drawPixmap(
-            (side - scaled.width()) // 2, (side - scaled.height()) // 2, scaled
-        )
-        painter.end()
-        return result
-
-    def _card(self, item: Attachment) -> QFrame:
-        """An attachment above the message field: the picture of an image, or
-        the first lines of a text, with a × to take it off."""
-        _wall, _own, other, ink, quiet, _tick = self._palette()
-        card = ClickableFrame()
-        card.clicked.connect(lambda one=item: self._open_attachment(one))
-        card.setFixedSize(CARD, CARD)
-        card.setToolTip(self.tr("Open {name}").format(name=item.name))
-        card.setStyleSheet(
-            f"QFrame {{ background: {other}; border: 1px solid {quiet};"
-            f" border-radius: 10px; }} QLabel {{ color: {ink}; border: 0;"
-            " background: transparent; }"
-        )
-        pixmap = QPixmap()
-        if item.kind == "image" and pixmap.loadFromData(item.data):
-            picture = QLabel(card)
-            picture.setPixmap(self._rounded(pixmap, CARD, 10))
-            picture.setGeometry(0, 0, CARD, CARD)
-        else:
-            lines = item.text.splitlines()[:5]
-            preview = QLabel("\n".join(line[:18] for line in lines), card)
-            preview.setStyleSheet(f"color: {quiet}; font-size: 8px;")
-            preview.setGeometry(8, 6, CARD - 16, CARD - 30)
-            preview.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-            name = QLabel(
-                card.fontMetrics().elidedText(
-                    item.name, Qt.TextElideMode.ElideMiddle, CARD - 16
-                ),
-                card,
-            )
-            name.setStyleSheet("font-size: 10px; font-weight: bold;")
-            name.setGeometry(8, CARD - 22, CARD - 16, 16)
-        remove = QPushButton("×", card)
-        remove.setFixedSize(18, 18)
-        remove.move(CARD - 22, 4)
-        remove.setStyleSheet(
-            f"QPushButton {{ color: {ink}; background: {other}; border: 1px solid"
-            f" {quiet}; border-radius: 9px; padding: 0; }}"
-        )
-        remove.clicked.connect(lambda _checked=False, one=item: self._detach(one))
-        return card
+        """Open an attachment with the program the system uses for its kind."""
+        problem = self.view.open_attachment(item)
+        if problem:
+            self._show_status(problem)
 
     def _detach(self, item: Attachment) -> None:
         self._pending.remove(item)
@@ -831,175 +453,21 @@ class AssistantTab(QWidget):
         self._add_entry("app", text)
         self.changed.emit()
 
-    @staticmethod
-    def _palette() -> tuple[str, str, str, str, str, str]:
-        """The colors of the chat, from the theme in use: the wall, the
-        person's bubble, the other bubbles, the text, the quiet text and the
-        ticks."""
-        return (
-            themed("#f7f7fa"),
-            themed("#e5f4eb"),
-            themed("#ffffff"),
-            themed("#20232a"),
-            themed("#6b7380"),
-            themed("#176b58"),
-        )
-
-    def _restyle_thread(self) -> None:
-        background, _own, other, ink, quiet, _tick = self._palette()
-        self.thread_view.color = QColor(background)
-        self.thread_view.ink = QColor(quiet)
-        self.thread_view.update()
-        self.composer.setStyleSheet(
-            f"QFrame#assistantComposer {{ background: {background}; }}"
-        )
-        self.welcome.setStyleSheet(
-            f"QLabel {{ background: {other}; color: {quiet}; border-radius: 10px;"
-            " padding: 12px 16px; }"
-        )
-        self.input.setStyleSheet(
-            f"QPlainTextEdit#assistantInput {{ background: {other}; color: {ink};"
-            " border: 0; border-radius: 18px; padding: 6px 12px; }"
-        )
-
     def _add_entry(self, role: str, text: str) -> None:
         self._entries.append((role, text))
         self._add_bubble(role, text)
 
     def _add_bubble(
         self, role: str, text: str, files: tuple[Attachment, ...] = ()
-    ) -> MessageText:
+    ) -> Any:
         """Put a bubble at the end: the person's on the right, the others on
         the left."""
-        label = MessageText(markdown=role == "assistant")
-        label.setText(text)
-        label.setVisible(bool(text) or not files)
-        bubble = QFrame()
-        bubble.setObjectName("assistantBubbleOf" + role)
-        inside = QVBoxLayout(bubble)
-        inside.setContentsMargins(10, 6, 10, 4)
-        inside.setSpacing(2)
-        for item in files:
-            inside.addWidget(self._picture(item))
-        inside.addWidget(label)
-        stamp = None
-        if role != "app":
-            stamp = QLabel()
-            stamp.setTextFormat(Qt.TextFormat.RichText)
-            stamp.setAlignment(
-                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-            )
-            inside.addWidget(stamp)
-        clock = zone_now().strftime("%H:%M")
-        self._style_bubble(bubble, role, stamp, clock)
-        line = QHBoxLayout()
-        line.setContentsMargins(8, 2, 8, 2)
-        if role == "user":
-            line.addStretch(1)
-            line.addWidget(bubble)
-        else:
-            line.addWidget(bubble)
-            line.addStretch(1)
-        self.thread_layout.insertLayout(self.thread_layout.count() - 1, line)
-        self.welcome.hide()
-        self._bubbles.append(bubble)
-        self._labels.append(label)
-        self._bubble_info.append((role, stamp, clock))
-        self._fit()
-        return label
-
-    def _picture(self, item: Attachment) -> QFrame:
-        """What an attachment looks like in a sent message: a pill with a small
-        picture, the name and what it holds (the size of an image, the lines of
-        a text)."""
-        pill = ClickableFrame()
-        pill.clicked.connect(lambda one=item: self._open_attachment(one))
-        pill.setObjectName("attachmentPill")
-        row = QHBoxLayout(pill)
-        row.setContentsMargins(6, 3, 8, 3)
-        row.setSpacing(6)
-        pixmap = QPixmap()
-        icon = QLabel()
-        if item.kind == "image" and pixmap.loadFromData(item.data):
-            icon.setPixmap(self._rounded(pixmap, PILL_THUMB, 4))
-            detail = f"{pixmap.width()}×{pixmap.height()}"
-        else:
-            icon.setPixmap(
-                self.style()
-                .standardIcon(self.style().StandardPixmap.SP_FileIcon)
-                .pixmap(PILL_THUMB, PILL_THUMB)
-            )
-            detail = self.tr("{count} lines").format(count=len(item.data.splitlines()))
-        name = QLabel(item.name)
-        name.setStyleSheet("font-weight: bold;")
-        meta = QLabel(detail)
-        meta.setObjectName("attachmentMeta")
-        for widget in (icon, name, meta):
-            row.addWidget(widget)
-        pill.setToolTip(self.tr("Open {name}").format(name=item.name))
-        pill.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
-        return pill
-
-    def _style_bubble(
-        self, bubble: QFrame, role: str, stamp: QLabel | None, clock: str
-    ) -> None:
-        """Color a bubble from the theme in use."""
-        _background, own, other, ink, quiet, tick_color = self._palette()
-        color = own if role == "user" else other
-        edge = f"border: 1px dashed {quiet};" if role == "app" else ""
-        text_color = quiet if role == "app" else ink
-        name = f"QFrame#assistantBubbleOf{role}"
-        tail = (
-            "border-top-right-radius: 2px;"
-            if role == "user"
-            else "border-top-left-radius: 2px;"
+        return self.view.add_bubble(
+            role, text, zone_now().strftime("%H:%M"), files, self._open_attachment
         )
-        bubble.setStyleSheet(
-            f"{name} {{ background: {color}; {edge} border-radius: 10px; {tail} }}"
-            f"{name} QLabel {{ color: {text_color}; background: transparent; }}"
-            f"{name} QTextBrowser {{ color: {text_color}; background: transparent; }}"
-            f"{name} QFrame#attachmentPill {{ background: rgba(0, 0, 0, 40);"
-            f" border: 1px solid {quiet}; border-radius: 6px; }}"
-            f"{name} QLabel#attachmentMeta {{ color: {quiet}; }}"
-        )
-        if stamp is not None:
-            ticks = (
-                f' <span style="color: {tick_color}">✓✓</span>'
-                if role == "user"
-                else ""
-            )
-            stamp.setText(clock + ticks)
-            stamp.setStyleSheet(f"font-size: 10px; color: {quiet};")
 
-    def restyle(self) -> None:
-        """Take the colors of the theme in use, for what is already shown."""
-        self._restyle_thread()
-        self._style_buttons()
-        self._refresh_chips()
-        for bubble, (role, stamp, clock) in zip(
-            self._bubbles, self._bubble_info, strict=True
-        ):
-            self._style_bubble(bubble, role, stamp, clock)
-
-    def _fit(self) -> None:
-        """Keep the bubbles within a share of the width, so a long answer wraps
-        and the sides stay visible."""
-        limit = int(self.thread_scroll.viewport().width() * BUBBLE_WIDTH)
-        for bubble in self._bubbles:
-            bubble.setMaximumWidth(max(limit, 160))
-
-    def resizeEvent(self, event) -> None:
-        super().resizeEvent(event)
-        self._fit()
-
-    def _follow_the_end(self, _low: int, high: int) -> None:
-        """The conversation grew: stay on the newest message, unless the person
-        scrolled up to read."""
-        if self._at_end:
-            self.thread_scroll.verticalScrollBar().setValue(high)
-
-    def _scrolled(self, value: int) -> None:
-        self._at_end = value >= self.thread_scroll.verticalScrollBar().maximum() - 2
+    def _drop_last_bubble(self) -> None:
+        self.view.drop_last_bubble()
 
     def _ask(
         self,
@@ -1012,46 +480,45 @@ class AssistantTab(QWidget):
         if files:
             names = ", ".join(item.name for item in files)
             kept = f"{shown}\n" if shown else ""
-            kept += self.tr("(attached: {names})").format(names=names)
+            kept += translate("AssistantTab", "(attached: {names})").format(names=names)
         self._entries.append((role, kept))  # the files themselves are not kept
         self._add_bubble(role, shown, files)
         self._answer = ""
         self._stream = None
         self._failed = False
         self._set_busy(True)
-        self._worker = worker = AnswerWorker(
-            self.session,
-            text,
-            self._screen(),
-            files,
-            compact=self.auto_compact and self.session.needs_compact(),
-        )
-        worker.compacted.connect(self._compacted)
-        worker.piece.connect(self._on_piece)
-        worker.failed.connect(self._on_failed)
-        worker.finished.connect(lambda: self._on_finished(worker))
-        worker.start()
+        screen = self._screen()
+        compacting = self.auto_compact and self.session.needs_compact()
 
-    def _on_piece(self, piece: str) -> None:
+        def produce():  # type: ignore[no-untyped-def]
+            """The answer as it is made, after the compaction of a long
+            conversation."""
+            if compacting:
+                yield Compacted(*self.session.compact())
+            stream = self.session.send(text, screen, files)
+            try:
+                yield from stream
+            finally:
+                stream.close()  # stops the program when the answer was cut short
+
+        self._worker = self._components.background(
+            produce,
+            on_piece=self._on_piece,
+            on_error=self._on_failed,
+            on_finished=self._on_finished,
+            stream=True,
+        )
+
+    def _on_piece(self, piece: Any) -> None:
+        if isinstance(piece, Compacted):
+            self._compacted(piece.before, piece.after)
+            return
         self._answer += piece
         shown = actions.strip(self._answer)
         if self._stream is None:
             self._stream = self._add_bubble("assistant", shown)
         else:
             self._stream.setText(shown)
-
-    def _drop_last_bubble(self) -> None:
-        if self._bubbles:
-            self._bubbles.pop().parentWidget()
-            label = self._labels.pop()
-            self._bubble_info.pop()
-            self.welcome.setVisible(not self._bubbles)
-            frame = label.parentWidget()
-            assert frame is not None
-            line = self.thread_layout.itemAt(self.thread_layout.count() - 2)
-            assert line is not None
-            self.thread_layout.removeItem(line)
-            frame.deleteLater()
 
     def _on_failed(self, message: str) -> None:
         if self._stream is not None:  # the half of an answer that came
@@ -1062,10 +529,12 @@ class AssistantTab(QWidget):
         self._answer = ""
         self._failed = True
         self.status.setText(
-            self.tr("The assistant could not answer: {message}").format(message=message)
+            translate(
+                "AssistantTab", "The assistant could not answer: {message}"
+            ).format(message=message)
         )
 
-    def _on_finished(self, worker: AnswerWorker) -> None:
+    def _on_finished(self) -> None:
         self._worker = None
         answer, self._answer = self._answer, ""
         stream, self._stream = self._stream, None
@@ -1089,16 +558,20 @@ class AssistantTab(QWidget):
         for found in actions.parse(answer):
             if isinstance(found, Invalid):
                 self._add_entry(
-                    "app", self.tr("Ignored an action: {why}").format(why=found.reason)
+                    "app",
+                    translate("AssistantTab", "Ignored an action: {why}").format(
+                        why=found.reason
+                    ),
                 )
             elif found.action.kind == "navigate":
                 self.navigate.emit(found)
             elif found.action.kind == "write" and not self._write_mode():
                 self._add_entry(
                     "app",
-                    self.tr(
+                    translate(
+                        "AssistantTab",
                         "Read-only mode: nothing was changed. Turn on the write mode "
-                        "in Settings to allow {what}."
+                        "in Settings to allow {what}.",
                     ).format(what=actions.describe(found)),
                 )
             elif found.action.kind == "write":
@@ -1111,73 +584,67 @@ class AssistantTab(QWidget):
     def _read(self, requests: list[Request]) -> None:
         if self._follow_ups >= MAX_FOLLOW_UPS:
             self._add_entry(
-                "app", self.tr("Stopped reading: too many reads for one question.")
+                "app",
+                translate(
+                    "AssistantTab", "Stopped reading: too many reads for one question."
+                ),
             )
             return
         self._follow_ups += 1
-        self._reader = reader = ReadWorker(
-            lambda: "\n\n".join(self._fetch(item, self.context) for item in requests)
+        self._reader = self._components.background(
+            lambda: "\n\n".join(self._fetch(item, self.context) for item in requests),
+            on_done=lambda message: self._on_read(requests, message),
+            on_finished=lambda: setattr(self, "_reader", None),
         )
-        reader.done.connect(lambda message: self._on_read(requests, message))
-        reader.finished.connect(lambda: setattr(self, "_reader", None))
-        reader.start()
 
     def _on_read(self, requests: list[Request], message: str) -> None:
         self._reader = None
         self._ask(
             message,
             "app",
-            self.tr("(read) {what}").format(
+            translate("AssistantTab", "(read) {what}").format(
                 what="; ".join(actions.describe(item) for item in requests)
             ),
         )
 
     def _add_card(self, request: Request) -> None:
-        card = QFrame()
-        card.setFrameShape(QFrame.Shape.StyledPanel)
-        layout = QHBoxLayout(card)
-        label = QLabel(actions.describe(request))
-        label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        label.setWordWrap(True)
-        run = QPushButton(self.tr("Run"))
-        cancel = QPushButton(self.tr("Cancel"))
-        layout.addWidget(label, 1)
-        layout.addWidget(run)
-        layout.addWidget(cancel)
-        run.clicked.connect(lambda: self._confirm(card, request))
-        cancel.clicked.connect(lambda: self._dismiss(card))
-        self.cards.addWidget(card)
+        card: list[Any] = []
 
-    def _confirm(self, card: QWidget, request: Request) -> None:
-        self._dismiss(card)
-        self.write.emit(request)
+        def dismiss() -> None:
+            self.view.remove_card(card[0])
 
-    def _dismiss(self, card: QWidget) -> None:
-        self.cards.removeWidget(card)
-        card.deleteLater()
+        def confirm() -> None:
+            dismiss()
+            self.write.emit(request)
+
+        card.append(
+            self.view.add_action_card(
+                actions.describe(request),
+                translate("AssistantTab", "Run"),
+                translate("AssistantTab", "Cancel"),
+                confirm,
+                dismiss,
+            )
+        )
 
     def _show_status(self, text: str) -> None:
         """Say what is going on, taking no room when there is nothing to
         say."""
-        self.status.setText(text)
-        self.status.setVisible(bool(text))
+        self.view.show_status(text)
 
     def _set_busy(self, busy: bool) -> None:
-        self.send_button.setEnabled(not busy)
-        self.stop_button.setEnabled(busy)
-        self.send_button.setVisible(not busy)
-        self.stop_button.setVisible(busy)
+        self.view.set_busy(busy)
         if busy:
-            self._show_status(self.tr("Thinking..."))
+            self._show_status(translate("AssistantTab", "Thinking..."))
         elif not self._failed:
             self._show_status("")
 
     def markdown(self) -> str:
         """The conversation, to read or to save."""
         who = {
-            "user": self.tr("You"),
+            "user": translate("AssistantTab", "You"),
             "assistant": NAME,
-            "app": self.tr("App"),
+            "app": translate("AssistantTab", "App"),
         }
         turns = list(self._entries)
         if self._stream is not None and self._answer:
@@ -1189,7 +656,6 @@ class AssistantTab(QWidget):
         self.closed = True
         for worker in (self._worker, self._reader):
             if worker is not None:
-                if isinstance(worker, AnswerWorker):
-                    worker.stopped = True
+                worker.stopped = True
                 worker.wait(SHUTDOWN_WAIT_MS)
         self.session.close()  # the program kept running goes with the tab

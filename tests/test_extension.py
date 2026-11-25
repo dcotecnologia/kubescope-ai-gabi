@@ -1,7 +1,8 @@
 from pathlib import Path
 
 import pytest
-import shiboken6
+from kubescope.extensions import testing
+from kubescope.extensions.components import UiComponents
 from kubescope.extensions.context import ExtensionContext
 from kubescope.extensions.manifest import read_manifest
 from kubescope.sdk import (
@@ -12,7 +13,6 @@ from kubescope.sdk import (
     THEME_CHANGED,
     WRITE_MODE_CHANGED,
 )
-from PySide6.QtWidgets import QApplication, QMessageBox
 
 from kubescope.gabi import extension, services
 from kubescope.gabi.controller import GabiController
@@ -86,9 +86,10 @@ def test_unloading_her_takes_everything_out_of_the_window(window) -> None:
     assert window.ui.footerRow.contentsMargins().right() > base  # her button's room
 
     ctx.close()
-    QApplication.sendPostedEvents(None, 52)  # QEvent.DeferredDelete
+    testing.settle()
 
-    assert not shiboken6.isValid(bubble) and not shiboken6.isValid(panel)
+    alive = UiComponents().is_alive
+    assert not alive(bubble) and not alive(panel)
     assert services.controller is None
     with pytest.raises(RuntimeError, match="not activated"):
         services.context()
@@ -191,28 +192,6 @@ def test_without_an_old_history_nothing_is_created(window, ctx) -> None:
     assert not (ctx.data_directory / "history.json").exists()
 
 
-def test_what_she_shows_goes_through_the_window_with_the_right_icon(
-    window, ctx, monkeypatch
-) -> None:
-    shown: list = []
-    monkeypatch.setattr(
-        window, "_show_message", lambda icon, title, text: shown.append(icon)
-    )
-    port = services.controller.port
-
-    port.show_message(QMessageBox.Icon.Warning, "T", "x")
-    port.show_message(QMessageBox.Icon.Critical, "T", "x")
-    port.show_message(QMessageBox.Icon.Information, "T", "x")
-    port.show_message(QMessageBox.Icon.Question, "T", "x")
-
-    assert shown == [
-        QMessageBox.Icon.Warning,
-        QMessageBox.Icon.Critical,
-        QMessageBox.Icon.Information,
-        QMessageBox.Icon.Information,
-    ]
-
-
 def test_her_button_in_the_chat_takes_the_person_to_the_settings(window, ctx) -> None:
     services.controller.port.show_settings()
 
@@ -277,7 +256,7 @@ def test_her_section_is_in_the_settings_of_the_window(window, ctx) -> None:
     assert not entry.card.isVisibleTo(form.settingsContent)
     entry.button.click()
     assert entry.card.isVisibleTo(form.settingsContent)
-    assert entry.panel.enabled.isChecked()
+    assert testing.find(entry.panel, "check").isChecked()
 
 
 def test_her_shortcut_is_in_the_shortcuts_of_the_settings(window, ctx) -> None:
@@ -300,13 +279,13 @@ def test_saving_the_settings_saves_her_section_and_the_chat_follows(
     window._apply_extension_contributions()
     [entry] = sections(window)
     window._show_page(2)
-    entry.panel.enabled.setChecked(False)
+    testing.find(entry.panel, "check").setChecked(False)
 
     window._save_preferences()
 
     assert window.settings.extension_data("kubescope.gabi")["enabled"] is False
     assert services.controller.dock.bubble.isHidden()
-    entry.panel.enabled.setChecked(True)
+    testing.find(entry.panel, "check").setChecked(True)
     window._save_preferences()
     assert window.settings.extension_data("kubescope.gabi")["enabled"] is True
 
@@ -321,7 +300,8 @@ def test_a_path_that_is_not_a_program_stops_the_settings_from_saving(
     monkeypatch.setattr(
         window, "_show_message", lambda icon, title, text: shown.append((title, text))
     )
-    entry.panel._paths["claude"].setText("/nowhere/claude")
+    testing.settle()  # the lines of an earlier load go
+    testing.find_all(entry.panel, "line")[0].setText("/nowhere/claude")
     before = window.settings.remember_last_context
     window.settings_ui.rememberCheck.setChecked(not before)
 
@@ -339,21 +319,22 @@ def test_the_button_of_the_section_forgets_the_conversations(
     cleared: list = []
     monkeypatch.setattr(services.controller, "clear_history", lambda: cleared.append(1))
 
-    entry.panel.clear_button.click()
+    testing.buttons(entry.panel)["Clear the chat history"].click()
 
     assert cleared == [1]
 
 
-def test_while_the_chat_is_the_page_the_window_may_be_made_smaller(window) -> None:
+def test_while_the_chat_is_the_page_the_window_may_be_made_smaller(window, ctx) -> None:
     usual = window.minimumSize()
     assert usual.width() > 0
 
-    extension._smaller_window(window, True)
-    extension._smaller_window(window, True)  # once is enough
+    smaller = services.controller.port.smaller_window
+    smaller(True)
+    smaller(True)  # once is enough
     assert window.minimumSize().width() == 0
 
-    extension._smaller_window(window, False)
-    extension._smaller_window(window, False)
+    smaller(False)
+    smaller(False)
     assert window.minimumSize() == usual
 
 
@@ -362,4 +343,4 @@ def test_the_manifest_says_the_oldest_kubescope_she_works_with() -> None:
 
     manifest = tomllib.loads((ROOT / "kubescope-extension.toml").read_text("utf-8"))
 
-    assert manifest["min_app"] == "2.4.0"  # the focus mode needs the window of 2.4.0
+    assert manifest["min_app"] == "2.9.0"  # the Settings use the elements of 2.9.0

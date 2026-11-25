@@ -1,18 +1,18 @@
-import os
-
-os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-
 import pytest
-from PySide6.QtWidgets import QApplication, QWidget
+from kubescope.extensions import testing
+from kubescope.extensions.components import UiComponents
 
 import kubescope.gabi as gabi
 from kubescope.gabi import claude, extension
-from kubescope.gabi.panel import AssistantDock
 from kubescope.gabi.session import ChatSession
-from kubescope.gabi.tab import AssistantTab
+from kubescope.gabi.tab import AssistantTab as _AssistantTab
 from tests.test_tab import FAKE
 
-application = QApplication.instance() or QApplication([])
+application = testing.application()
+
+
+def AssistantTab(*args, **kwargs):  # noqa: N802
+    return _AssistantTab(*args, components=UiComponents(), **kwargs)
 
 
 def test_the_app_runs_gabi_through_her_extension(monkeypatch) -> None:
@@ -65,17 +65,3 @@ def test_the_commands_of_the_chat_are_answered_here_not_by_the_program(command) 
     assert tab.input.toPlainText() == "" and not tab.busy
     assert (shown == ["the report"]) == (command == "/debug")
     assert asked == ([] if command == "/debug" else [1])
-
-
-def test_taking_the_panel_out_of_the_window_is_undone_when_gabi_leaves() -> None:
-    host = QWidget()
-    host.resize(800, 600)
-    host.show()
-    dock = AssistantDock(host)
-    dock.open()
-    dock.toggle_floating()  # the panel in a window of its own
-
-    dock.dispose()
-
-    assert dock._frame is None and not dock.is_open
-    host.close()

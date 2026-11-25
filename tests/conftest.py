@@ -5,6 +5,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
+from kubescope.extensions import testing
 from kubescope.sdk.errors import ClusterError
 
 
@@ -43,14 +44,7 @@ def still_windows(monkeypatch):
 def no_blocking_dialogs(monkeypatch):
     """A modal dialog nobody can answer would hang the run; fail fast
     instead."""
-    from PySide6.QtWidgets import QDialog, QMessageBox
-
-    def refuse(*_args, **_kwargs):
-        running = os.environ.get("PYTEST_CURRENT_TEST", "no test")
-        raise AssertionError(f"a test opened a real modal dialog ({running})")
-
-    monkeypatch.setattr(QDialog, "exec", refuse)
-    monkeypatch.setattr(QMessageBox, "exec", refuse)
+    testing.refuse_modals(monkeypatch)
 
 
 @pytest.fixture(autouse=True)
@@ -78,9 +72,7 @@ def no_chosen_assistant_programs():
 @pytest.fixture(autouse=True)
 def still_panel(monkeypatch):
     """The panel of Gabi shows and goes at once."""
-    from kubescope.gabi import panel
-
-    monkeypatch.setattr(panel, "ANIMATION_MS", 0)
+    testing.still_panels(monkeypatch)
 
 
 class Store(dict):
@@ -170,17 +162,20 @@ class _FakeRefreshWorker:
     once."""
 
     def __init__(self, *_args, **_kwargs) -> None:
-        from PySide6.QtCore import QObject, Signal
+        class Event:
+            def __init__(self) -> None:
+                self.handlers: list = []
 
-        class Signals(QObject):
-            completed = Signal(list, list)
-            failed = Signal(str)
-            finished = Signal()
+            def connect(self, handler) -> None:
+                self.handlers.append(handler)
 
-        self._signals = Signals()
-        self.completed = self._signals.completed
-        self.failed = self._signals.failed
-        self.finished = self._signals.finished
+            def emit(self, *arguments) -> None:
+                for handler in self.handlers:
+                    handler(*arguments)
+
+        self.completed = Event()
+        self.failed = Event()
+        self.finished = Event()
         self.key = None
 
     def isRunning(self) -> bool:
@@ -196,11 +191,9 @@ def window(monkeypatch):
     it."""
     import time
 
-    from PySide6.QtWidgets import QApplication
-
     from kubescope import window as window_module
 
-    application = QApplication.instance() or QApplication([])
+    application = testing.application()
     monkeypatch.setattr(window_module, "list_contexts", lambda: ([], None))
     monkeypatch.setattr(
         window_module.WorkloadWindow, "refresh_overview", lambda *_a: None
