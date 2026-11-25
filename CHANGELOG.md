@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-24
+
+### Changed
+
+- The notice of the system when she is done is a `task` notice, so the notifications extension keeps it in the bell and the person chooses whether it is listed and told (it needs the SDK 1.10) by @danilogco
+
 ## [1.3.0] - 2026-11-24
 
 ### Added
@@ -59,7 +65,8 @@ All notable changes to this project will be documented in this file. The format 
 
 - Gabi as an extension of her own project, written against the KubeScope SDK only: the chat in the corner of the window, her section of the Settings, her shortcut and the terminal commands `chat` and `assistant`
 
-[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.1.0...v1.2.0
