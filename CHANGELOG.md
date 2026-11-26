@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-25
+
+### Added
+
+- The manifest says the newest KubeScope the extension works with (`max_app`, 3.0.0), so a KubeScope newer than that neither installs nor offers it, and keeps the version made for it by @danilogco
+
 ## [1.5.1] - 2026-11-25
 
 ### Fixed
@@ -77,7 +83,8 @@ All notable changes to this project will be documented in this file. The format 
 
 - Gabi as an extension of her own project, written against the KubeScope SDK only: the chat in the corner of the window, her section of the Settings, her shortcut and the terminal commands `chat` and `assistant`
 
-[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.5.1...v1.6.0
 [1.5.1]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/dcotecnologia/kubescope-ai-gabi/compare/v1.3.0...v1.4.0
